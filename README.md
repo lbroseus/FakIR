@@ -1,2 +1,4 @@
-# f-IRed
-A framework for Intron Retention Events Detection (using RNA-sequencing data)
+# FakIR: a First-aid kit for the computational prediction of Intron Retention events
+
+
+
