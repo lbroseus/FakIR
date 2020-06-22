@@ -3,7 +3,7 @@
 
 FakIR is an R package for Intron Retention (IR) detection, quantification and exploration using Second and Third Generation Sequencing data.
 
-A pdf version of the tutorial is available here: [Tutorial]().
+A pdf version of the tutorial is available here: [Tutorial](https://github.com/lbroseus/FakIR/blob/master/IR-events-detection-and-interpretation.pdf).
 
 
 ## Package installation 
