@@ -1,4 +1,4 @@
-Package: fakIR
+Package: FakIR
 Title: Intron retention detection and quantification using Second and Third Generation sequencing data
 Version: 0.0.99
 Authors@R: 
