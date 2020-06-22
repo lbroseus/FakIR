@@ -2,7 +2,7 @@
 title: "IR events detection and interpretation using FakIR"
 author: "Lucile Broseus"
 output: 
-        rmarkdown::html_vignette:
+        html_document:
 vignette: |
   %\VignetteIndexEntry{Workflow for IR events detection and interpretation} 
   %\VignetteEngine{knitr::rmarkdown} 
