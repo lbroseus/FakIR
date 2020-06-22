@@ -1,5 +1,4 @@
 # FakIR: a First-aid kit for investigating Intron Retention events
-==================================================================
 
 FakIR is an R package for Intron Retention (IR) detection, quantification and exploration using Second and Third Generation Sequencing data.
 
