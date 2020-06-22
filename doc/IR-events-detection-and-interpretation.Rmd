@@ -1,0 +1,799 @@
+---
+title: "IR events detection and interpretation using IRFindeR2"
+author: "Lucile Broseus"
+output: 
+        rmarkdown::html_vignette:
+        toc: true
+        css: custom.css
+        fig_caption: yes
+        pdf_document:
+        highlight: null
+        number_sections: yes
+vignette: |
+  %\VignetteIndexEntry{Workflow for IR events detection and interpretation} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE, out.width=10}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+<br />
+
+<!-- Introduction -->
+# Introduction
+
+<!-- Abstract -->
+## Abstract
+
+Intron retention (IR) occurs when an intron in a pre-mRNA remains in the mature mRNA. An increasing body of literature has demonstrated a major role for IR in numerous biological functions and in disease. Although experimental technologies used to study other forms of mRNA splicing can also be used to investigate IR, a specialized downstream computational analysis is optimal for IR discovery and analysis.  Here we provide a practical guide to detecting and analyzing IR using second and third generation RNA sequencing data. We also indicate code lines for predicting (in-silico) the potential impact of IR on gene expression and protein output. 
+
+<!-- Summary -->
+## Summary
+
+[Introduction]
+
+  - [Abstract]
+  - [Summary]
+  - [Package Installation]
+  - [External data]
+  - [BSGenome: representation of reference genomes in R]
+
+[IR events detection: from Second Generation RNA-seq data]
+
+  - [Prerequisite: compute intron coverage information with IRFinder]
+  - [Extraction of Intron Retention events]
+  - [About other IR detection approaches]
+  
+[Differential Analysis of IR levels: from Second Generation RNA-seq data]
+
+[IR events detection: from Third Generation RNA-seq data]
+
+  - [Analysis of long read alignments]
+  - [How to use long read coverage information]
+  
+[IR transcript reconstruction: from Third Generation RNA-seq data]  
+
+  - [Typical transcriptome assembly from long reads]
+  - [Extraction of full-length reads]
+  - [Extraction of IR-transcripts]
+
+[IR events interpretation: prediction of IR-NMD coupling]
+
+  - [Detect stop codons in retained introns]
+  - [Assume hypothetical IR-transcripts using a transcriptome annotation]
+  - [Prediction of Premature Termination Codons in assembled transcripts]
+
+[References]
+
+<br />
+
+<!-- Installation -->
+## Package Installation
+
+The R package *IRFindeR2* can be installed from my gitlab account by copy-pasting the following code line:
+
+```{r git_install, eval = FALSE, echo = TRUE}
+
+install_gitlab("lbroseus/IRFindeR2", host = "gitlab.igh.cnrs.fr")
+ 
+```
+
+To start with, load *IRFindeR2*:
+
+```{r packages, echo = T, eval = T, warning=F}
+
+suppressPackageStartupMessages( library(IRFindeR2) )
+ 
+```
+
+We will also make use of the packages *dplyr* and *ggplot2*, available on the CRAN, to explore our IR results:
+
+```{r other_packages, echo = T, eval = T, warning=F}
+
+if( !("dplyr" %in% installed.packages()) ) install.packages( "dplyr" )
+
+suppressPackageStartupMessages( library(dplyr) )
+
+if( !("ggplot2" %in% installed.packages()) ) install.packages( "ggplot2" )
+
+suppressPackageStartupMessages( library(ggplot2) )
+ 
+```
+
+<!-- External data -->
+## External data
+
+For illustrating how to use this package to detect intron retention events, we provide extracts (chromosome 2) 
+of all standard input files. 
+
+<br />
+
+Once you have installed *IRFindeR2*, these files can be found in folder:
+
+```{r, eval = FALSE, echo = TRUE}
+
+system.file("extdata", package = "IRFindeR2")
+ 
+```
+
+You will find extracts from several public reference data for *Homo Sapiens*.
+
+1. **A reference transcriptome**.
+An extraction of the annotated transcripts mapping on the chromosome 2, downloaded from *Ensembl*. 
+We will make use of the release: *Homo_sapiens.GRCh38.97*:
+
+```{r, eval = TRUE, echo = TRUE}
+
+gtf <- system.file("extdata", "Homo_sapiens.GRCh38.97.chr2.gtf", package = "IRFindeR2")
+ 
+```
+
+2. **TSS inferred from CAGE data**. 
+
+An extraction of chromosome 2 of ENCODE/RIKEN CAGE data for the MCF7 cell line; we will make use of them to subset aligned full-length long read from a bam file (cf: [Extraction of full-length reads]).  
+
+```{r, eval = TRUE, echo = TRUE}
+
+cageFile <- system.file("extdata", "GSM849364_hg38_wgEncodeRikenCageMcf7CellPapTssGencV7.chr2.gtf", 
+                       package = "IRFindeR2")
+ 
+
+```
+
+More and complete public CAGE data for several cell lines can also be found at <>.
+
+<br />
+
+Additionaly, we provide extracts from our own in-house matched Second and Third generation sequencing experiments, realised on the human cell line *MCF10A*.  
+The full raw datasets can be downloaded from *GEO*, under accession number *GSE126638* and were used and described in described in reference _3_ (Supplementary Materials). 
+
+*MCF10A* data available in *IRFindeR2* package consists in:
+
+3. **Second generation sequencing data**.  
+
+You will find a typical *IRFinder* output file on chromosome 2 from an Illumina RNA-seq experiment:
+
+```{r, echo = TRUE, eval = TRUE}
+
+irfinderFile <- system.file("extdata", "MCF10A_chr2.IRFinder-IR-dir.txt", package = "IRFindeR2")
+ 
+```
+
+This file will be used to detect IR events from short read RNA-seq data (cf: [Extraction of Intron Retention events]). 
+For more information as to how to generate such a file, please refer to [Prerequisite: compute intron coverage information with IRFinder].  
+
+4. **Third generation sequencing data**.  
+
+We provide a **bam file** of direct-RNA-Nanopore alignments on the chromosome 2, performed using *Minimap2* (reference _4_):
+ 
+```{r, eval = TRUE, echo = TRUE}
+
+bamFile <- system.file("extdata", "MCF10A_chr2.dont.bam", package = "IRFindeR2")
+ 
+```
+
+Additionaly, using full-length long reads from this bam file, we performed a transcript assembly that we will use especially in [Prediction of Premature Termination Codons in assembled transcripts].  
+You can find this assembly in:
+
+```{r, eval = TRUE, echo = TRUE}
+
+assembly.gtf <- system.file("extdata", "MCF10A_chr2.dont_assembly.gtf", package = "IRFindeR2")
+ 
+```
+
+## BSGenome: representation of reference genomes in R
+
+When it comes to retrieve transcript sequence, many R functions make use of reference genome represented as a *BSGenome* object.
+
+You will need to identify, install and import a convenient reference to reproduce the following analyses on you own data. 
+This can be done by adapting the code below to your organism and version of interest:
+
+```{r, echo = TRUE, eval = FALSE}
+
+# Display available genomes and identify the one that fits your data:
+BSgenome::available.genomes()
+ 
+# Specify the reference of your choice:
+yourGenomeChoice <- "BSgenome.Hsapiens.UCSC.hg38"
+ 
+# Download its representation in R:
+if (interactive()) {
+    if (!require("BiocManager"))
+        install.packages("BiocManager")
+    BiocManager::install( yourGenomeChoice )
+}
+ 
+# Import into R:
+BSgenome <- getBSgenome(genome = yourGenomeChoice, masked=FALSE)
+ 
+```
+
+For our toy dataset extracted from experiments carried on the human cell line MCF10A, we will import the hg38 reference genome:  
+
+```{r, echo = TRUE, eval = TRUE}
+
+BSgenome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+ 
+```
+
+<br />
+
+# IR events detection: from Second Generation RNA-seq data
+
+## Prerequisite: compute intron coverage information with IRFinder
+
+We will start from computations output using *IRFinder* (cf: <https://github.com/williamritchie/IRFinder> for more details and reference _1_).  
+
+<br />
+
+First, you need to build a specific genome index and indicate.  
+Then, *IRFinder* will call the aligner *STAR* and perform several computations based on the read coverage of introns.
+
+<br />
+
+Eventually, *IRFinder* will output several indicators (in a file named *IRFinder-IR-dir.txt*), which are used to filter the best supported IR events (cf: reference _2_).  
+
+<br />
+
+Here is an example of typical command lines for *Homo Sapiens* data, using the *hg38* reference genome and the release 97 of *Ensembl* human transcriptome (see also for examples with versions and genomes: <http://mimirna.centenary.org.au/irfinder/genomes.html>):  
+
+```{r, echo = TRUE, eval = FALSE}
+
+#Step 1: Build a genome index:
+
+bin/IRFinder -m BuildRef -r REF/Human-hg38-release97 \
+    -e REF/extra-input-files/RNA.SpikeIn.ERCC.fasta.gz \
+    -R REF/extra-input-files/Human_hg38_nonPolyA_ROI.bed \
+    ftp://ftp.ensembl.org/pub/release-97/gtf/homo_sapiens/Homo_sapiens.GRCh38.97.gtf.gz
+ 
+```
+
+```{r, echo = TRUE, eval = FALSE}
+
+#Step 2: align (paired-end) reads with STAR and analyse intron coverage:
+
+bin/IRFinder -r REF/Human-hg38-release97  -d irfinder READ_1.fastq READ_2.fastq
+ 
+```
+
+## Extraction of Intron Retention events 
+
+IRFinder outputs a file named *IRFinder-IR-dir.txt* containing a series of variables describing coverage properties of annotated introns. These are used to decide whether it shows convincing evidence of retention.  
+For illustration purposes, we provide as [External data], IRFinder results obtained from an Illumina RNA-seq experiment carried out on the MCF10A cell line:
+
+```{r, echo = TRUE, eval = TRUE}
+
+irfinderFile <- system.file("extdata", "MCF10A_chr2.IRFinder-IR-dir.txt", package = "IRFindeR2")
+ 
+```
+
+Let's have a look at variables computed by *IRFinder*:
+
+```{r, echo = TRUE, eval = TRUE}
+
+irfinder_results <- read.table(irfinderFile, header = T, sep = "\t")
+
+head(irfinder_results, 10)
+ 
+```
+
+IR events calling, using advised parameters (see reference _1_ and _2_), can be achieved directly (or adjusted) from a standard *IRFinder-IR-dir.txt* file as follows:
+
+```{r ir_detection, echo = TRUE, eval = TRUE}
+
+# Main variables from which IR events are inferred:
+minIRratio <- 0.1
+minSpliceRead <- 3
+minExonToIntronReads <- 1
+minCoverage <- 0.1
+
+# Import the file IRFinder-IR-dir.txt and extract filter IR events:
+ir_events <- filterIRevents(irfinderFile = irfinderFile, 
+                            minIRratio = minIRratio, 
+                            minSpliceRead = minSpliceRead, 
+                            minExonToIntronReads = minExonToIntronReads,
+                            minCoverage = minCoverage)
+ 
+```
+
+## About other IR detection approaches
+
+Other softwares have been developed to compute intron coverage information (eg: KMA and iRead).
+You can use them (or your own filtering method) instead of IRFinder to select credible IR events, and still apply the following workflow.  
+ At this step, all you need is to feed the variable *ir_events* with the genomic intervals of your retained introns as a *GRanges* object or as a data.frame that can be coerced to a *GRanges* object (typically with columns chr/seqnames, start, end, strand).
+
+<br />
+
+# Differential Analysis of IR levels: from Second Generation RNA-seq data
+
+Though it would deserve more precautions (and benchmarking), most approaches that have been proposed so far simply consist in applying existing well-known methods for differential analysis (eg: DESeq2, edgeR, DEXSeq) to intronic features (see reference _2_ for a discussion).  
+IRFindeR2 includes a wrapper to perform end-to-end differential analysis of introns through DEXSeq.  
+Please refer to the DEXSeq vignette (<https://www.bioconductor.org/packages/release/bioc/vignettes/DEXSeq/inst/doc/DEXSeq.html>) and to the paper (reference _8_) for more information about the method in itself.
+
+To carry out differential analysis of IR-levels using IRFindeR2, you will need:
+
+1. a reference transcriptome in a gtf file (from which to extract intron genomic coordinates);
+2. bam files for all samples to be considered in the differential analysis;
+3. to know how samples should be grouped together (!)
+4. and the library type of your samples (ie: whether they are single or paired-end).
+
+
+So first, indicate a gtf file for your reference transcriptome. Please adapt the path.
+
+```{r, eval = FALSE, echo = TRUE}
+
+gtf <- "Your_favourite_organism_versionXXX.gtf"
+   
+```
+
+Then, you must provide the paths to your input bam files and indicate how your samples should be grouped together in the differential test (a "target").  You may also have this in a separate text file and import it into R as a data.frame.  
+
+Here is a toy example:
+
+```{r, eval = TRUE, echo = TRUE}
+
+files <- c("sample1.WT.bam", "sample2.WT.bam", "sample3.WT.bam",
+           "sample1.KO.bam", "sample2.KO.bam", "sample3.KO.bam")
+
+conditions <- c("WT", "WT", "WT", 
+                "KO", "KO", "KO") 
+
+libType <- "single-end" # choose between "single-end" or "paired-end"
+
+target <- data.frame(file = files, condition = conditions)
+
+target
+  
+```
+
+Now, we are ready to run DEXSeq computations through our wrapper function:
+
+```{r, eval = FALSE, echo = TRUE}
+
+idxd <- DEXSeq4Introns(gtf, target, libType, verbose = TRUE) 
+   
+```
+
+This will run intron read counting, estimation of size factors, estimation of dispersions, the differential test and estimation of intron fold changes. It may take a while...
+
+```{r, eval = FALSE, echo = TRUE}
+
+table ( idxd$padj < 0.1 ) 
+   
+```
+
+<br />
+
+# IR events detection: from Third Generation RNA-seq data
+
+## Analysis of long read alignments
+
+The first step for a reference-based analysis is to define *independent* intron intervals from a reference transcriptome (see ref 2 for more details on intron definition).    
+Here, we use the annotation *Homo_sapiens.GRCh38.97* provided by *Ensembl*. 
+
+```{r make_introns_db, eval = TRUE, echo = TRUE}
+
+intronGR <- createIntronGR(gtf = gtf)
+ 
+```
+
+This generates a *GRanges* object with *independent* intron intervals as well as their gene of origin:  
+
+```{r, eval = TRUE, echo = TRUE}
+
+intronGR
+ 
+```
+
+Introns that are already part of an reference transcript (transcripts annotated as *retained_intron*) can be identified by the value 1 in column *annotated_intron*:
+
+```{r, eval = TRUE, echo = TRUE}
+
+table( intronGR$annotated_intron )
+ 
+```
+
+```{r, eval = TRUE, echo = TRUE, fig.width = 10, fig.height = 5}
+
+data.frame(intronGR) %>% mutate(intron_width = end - start + 1) %>% 
+                         ggplot(aes(intron_width, fill = annotated_intron)) + 
+                         geom_histogram(bins = 25, color = "orange") + scale_x_log10() +
+                         theme_minimal() + scale_fill_manual(values = c("darkblue", "lightblue")) +
+                         ggtitle("Independent intron width (Homo Sapiens, chromosome 2)")
+ 
+```
+
+We then compare long read genome alignments (bam file) to intron intervals using:   
+
+```{r call_events, eval = TRUE, echo = TRUE}
+
+IR_events <- callIRevents(bamFile, intronGR)
+ 
+```
+
+This will create a *data.frame* crossing long reads and the introns they overlap with, along with some properties of the events:  
+1. **intron_fracoverlap**: the proportion of the intron that is contained in the long read (taking into account splicing and possible gaps);   
+2. **intron_startOverlap**: indicates whether the 5' exon-intron junction is contained in the long read;  
+3. **intron_endOverlap**: indicates whether the 3' exon-intron junction is contained in the long read.  
+
+The variables *intron_startOverlap* and *intron_endOverlap* can help ensure an intron overlap is an actual IR events, rather than an intronic alternative Transcription Start Site (cf: reference _6_).
+
+Here is an overview of the result: 
+
+```{r display_events, eval = TRUE, echo = TRUE}
+
+head(IR_events)
+ 
+```
+
+Each line corresponds to a long read and one intron overlap. Long read overlapping several introns will then give rise to several lines in the data.frame.  
+IR event calling can then be easily performed. See the following for some examples.
+
+<!-- Call -->
+## How to use long read coverage information
+
+### Extract reliable IR events
+
+You can extract complete intron retention events:
+
+```{r full_ir_events, eval = TRUE, echo = TRUE}
+
+full_IR_events <- IR_events %>% 
+                  filter(intron_fracoverlap == 1 & intron_startOverlap & intron_endOverlap)
+ 
+```
+
+### Count full and partial IR events
+
+```{r reliable_events, eval = TRUE, echo = TRUE}
+
+retained_introns <- IR_events %>% 
+                    filter(intron_fracoverlap == 1 & intron_startOverlap & intron_endOverlap) %>%
+                    group_by(intron_chr, intron_start, intron_end, intron_strand, gene_id) %>%
+                    summarise(read_count = n()) %>%
+                    data.frame()
+ 
+```
+
+### Examine intron-retaining long reads
+
+In order to extract long reads containing at least one intron at its full extent:
+
+```{r IR_rna, eval = TRUE, echo = TRUE}
+
+IR_reads <- full_IR_events %>% 
+            group_by(read_name) %>% 
+            summarise(nbfullRI = n()) %>% 
+            data.frame()
+ 
+```
+
+
+```{r, eval = F, echo = F}
+
+#Multiple retention events
+
+#Long read depth analysis
+
+```
+
+<br />
+
+# IR transcript reconstruction: from Third Generation RNA-seq data
+
+## Typical transcriptome assembly from long reads
+
+Here is the general *StringTie2* command line to assemble transcripts from a long read RNA-seq data set(cf: <https://github.com/gpertea/stringtie>):
+
+```{r stringtieA, eval = FALSE, echo = TRUE}
+
+stringtie -L -G Homo_sapiens.GRCh38.97.gtf -o assembly.gtf long_reads.bam
+ 
+```
+
+Several filtering steps can be considered to improve the assembly of (Intron-Retaining) transcripts:
+
+1. The extraction of full-length long reads to mitigate the number of false positive shorter transcripts
+2. The extraction of long read overlapping an intron.
+
+## Extraction of full-length reads
+
+First, we specify the (custom and reference) data we will need to identify alignments that (may) correspond to full-length reads: 
+
+```{r, echo = TRUE, eval = FALSE}
+
+# Long read splice-aware alignments on a reference genome (eg: output by Minimap2):
+alignments <- system.file("extdata", "MCF10A_chr2.dont.bam", package = "IRFindeR2")
+
+# Reference transcriptome in a gtf file:
+gtf <- system.file("extdata", "Homo_sapiens.GRCh38.97.chr2.gtf", package = "IRFindeR2")
+
+# TSS called from CAGE data carried on a comparable cell line (here MCF7), provided by ENCODE:
+cageFile <-  system.file("extdata", "GSM849364_hg38_wgEncodeRikenCageMcf7CellPapTssGencV7.chr2.gtf", 
+                         package = "IRFindeR2")
+
+# Name for the output bam file, that will contain only full-length reads alignments:
+saveFile <- "fl_long_reads.bam"  # Or replace with a convenient path
+
+```
+
+```{r, echo = TRUE, eval = FALSE}
+
+extractFullLengthReads(alignments, gtf, cageFile, saveFile, verbose = TRUE)
+
+```
+
+## Extraction of IR-transcripts
+
+So as to avoid ignoring rare IR-transcripts, you may first extract potential intron-retaining transcripts (by analysing genome alignments) and then perform reconstruction from those reads only with specific parameters (eg: no minimum isoform fraction).  
+
+```{r, eval = TRUE, echo = TRUE}
+
+gtf <- system.file("extdata", "Homo_sapiens.GRCh38.97.chr2.gtf", package = "IRFindeR2")
+
+bamFile <- system.file("extdata", "MCF10A_chr2.dont.bam", package = "IRFindeR2")
+
+saveFile <- "ir_long_reads.bam"
+# Or replace with a convenient path
+
+```
+
+```{r, echo = TRUE, eval = FALSE}
+
+extractIRreads(alignments, gtf = gtf, saveFile = saveFile, intronMinoverlap = 5, keepSecondaryAlignments = FALSE)
+  
+```
+
+This function will first identify intron intervals from the input reference transcriptome (gtf) by calling the function ['IRFindeR2::createIntronGR()'] and will then select all long reads whose spliced alignment overlaps an intron.   
+Here, as a bam file name is given in *saveFile*, these alignments will be saved in a (new) bam file.
+
+<br />
+
+You may also perform you own identification or subsetting of intron intervals and specify them in a GRanges object.
+The following lines of code are equivalent to the one above:
+
+```{r, echo = TRUE, eval = FALSE}
+
+# Define intronic intervals from a reference transcriptome
+# Or feed intronGR with custom intron interval in a GRanges 
+intronGR <- createIntronGR( gtf )
+
+extractIRreads(alignments, intronGR = intronGR, saveFile, intronMinoverlap = 5, keepSecondaryAlignments = FALSE)
+  
+```
+
+You can then assemble only intron-overlapping long reads with *StringTie2* (for example) using:
+
+```{r stringtieIR, eval = FALSE, echo = TRUE}
+
+stringtie -L -G Homo_sapiens.GRCh38.97.gtf -f 0 -o assembly.gtf ir_long_reads.bam
+ 
+```
+
+<br />
+
+# IR events interpretation: prediction of IR-NMD coupling
+
+We present several *in-silico* approaches to identify genes or transcripts that may be regulated through IR-NMD degradation.  
+They can be split into two families, depending on whether you know the full structure and sequence of expressed IR-isoforms (eg: assembled from full-length long reads), or only the genomic interval of retained introns (eg: inferred from short reads or truncated long reads).
+
+<br />
+
+1. **From intron genomic intervals**: 
+[Detect stop codons in retained introns], [Assume hypothetical IR-transcripts using a transcriptome annotation]
+
+2. **From full-length IR-isoforms**:  
+[Prediction of Premature Termination Codons in assembled transcripts]
+
+<br />
+
+## Detect stop codons in retained introns 
+
+We will need IR events (eg: selected as above) and reference genome sequences to extract intron sequences:
+ 
+```{r genome, echo = TRUE, eval = TRUE}
+
+BSgenome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+ 
+```
+
+```{r stopCodons, echo = TRUE, eval = TRUE}
+
+ir_events <- countStopCodons(ir_events, BSgenome, stopCodons = c("TAA", "TAG", "TGA"))
+ 
+```
+
+This will add three columns **frame1**, **frame2**, **frame3** to the *data.frame* of selected IR events, giving the number of stop codons found in the intron sequence according to the three possible "reading frames":
+ 
+```{r, echo = TRUE, eval = TRUE}
+
+ir_events %>% dplyr::select(seqnames, start, end, strand , frame1, frame2, frame3) %>% head(15)
+ 
+```
+
+The conclusions that can be drawn from this simple screen are limited.  
+Nonetheless, it may allow a quick selection of interesting targets:
+
+1. **NMD-targets**. Introns whose retention would insert stop codons in all three reading frame (if part of the CDS and if the transcript were exported to the cytoplasm) are sign of IR-NMD degradation. Here, they represent most of the IR events:
+
+```{r NMDplus, echo = TRUE, eval = TRUE}
+
+ir_events %>% filter(frame1*frame2*frame3 > 0) %>% nrow()
+
+ir_events %>% filter(frame1*frame2*frame3 > 0) %>% 
+              dplyr::select(seqnames, start, end, start, gene_name, frame1, frame2, frame3) %>%
+              head(15)
+ 
+```
+
+2. **Translated IR**. On the opposite, introns whose retention would include no PTC into the transcript (whatever the rest of its exonic structure) may be indicate that IR-transcripts are actively translated (if exported to the cytoplasm):
+
+```{r NMDminus, echo = TRUE, eval = FALSE}
+
+ir_events %>% filter(frame1+frame2+frame3 == 0)
+ 
+```
+
+There is no such case in out toy data set.
+
+3. **Ambiguous cases**. Other cases are ambiguous and could only be identified with the knowledge of the full transcript structure:
+
+```{r NMD0, echo = TRUE, eval = TRUE}
+
+ir_events %>% filter(frame1+frame2+frame3 != 0 & frame1*frame2*frame3 == 0) %>%
+              dplyr::select(seqnames, start, end, start, gene_id, frame1, frame2, frame3)
+ 
+```
+
+## Assume hypothetical IR-transcripts using a transcriptome annotation  
+
+Once isolated IR events have been selected without knowing the complete transcript structure (eg: from short read data [IR events detection: from Second Generation RNA-seq data], or truncated long read [IR events detection: from Third Generation RNA-seq data]), one can create a "hypothetical" annotation for IR-transcripts by taking advantage of annotated transcripts that could contain them.  
+
+Thus, first, we will need to specify suitable reference transcripts (here downloaded from *Ensembl*):
+
+```{r ref, echo = TRUE, eval = TRUE}
+
+gtf <- system.file("extdata", "Homo_sapiens.GRCh38.97.chr2.gtf", package = "IRFindeR2")
+ 
+```
+
+Then, we identify reference transcripts that are compatible with the detected IR events and create corresponding IR-transcripts assembly:
+
+```{r assembly, echo = TRUE, eval = TRUE}
+
+# Where to save IR-transcripts assembly:
+outfile <- paste(system.file("extdata",  package = "IRFindeR2"), "MCF10A.hypothetical_ir_transcripts.gtf", sep = "/")
+
+findCompatibleTranscripts(ir_events, gtf, transcript_biotypes = "protein_coding", outfile = outfile)
+ 
+```
+
+## Prediction of Premature Termination Codons in assembled transcripts
+
+There are several approaches to infer whether a given transcript harbours a Premature Termination Codon (PTC).  
+They are more or less accurate, and depend on the amount of data available to you.  
+
+1. Translation Initiation Sites are not easy to determine
+2. A single transcript may have several open reading frames
+
+<br />
+
+We suggest a simple procedure that makes use of functions implemented in the Bioconductor package *IsoformSwitchAnalyzer*.    
+
+<br />
+
+*IsoformSwitchAnalyzeR* can be installed via Bioconductor by:
+
+```{r isa_install, eval = FALSE, echo = TRUE}
+
+install.packages("BiocManager")
+BiocManager::install()
+
+BiocManager::install("IsoformSwitchAnalyzeR")
+ 
+```
+
+### ORFs and PTC prediction from complete transcript sequences
+
+Once installed, load *IsoformSwitchAnalyzeR* into your current R session:
+
+```{r isa, eval = T, echo = T, warning = F}
+
+suppressPackageStartupMessages( require(IsoformSwitchAnalyzeR) )
+ 
+```
+
+In this example, we will import our own assembly of full-length MCF10A, provided as external data.  
+You may replace *assembly.gtf* with a path to your own assembly:
+
+```{r, eval = T, echo = T}
+
+assembly.gtf <- paste(system.file("extdata",  package = "IRFindeR2"), "MCF10A_chr2.dont_assembly.gtf", sep = "/")
+  
+```
+
+Now, import the transcriptome assembly as *switchAnalyzeRlist* object:  
+
+```{r importGTF, eval = T, echo = T}
+
+mySwitchList <- IsoformSwitchAnalyzeR::importGTF(pathToGTF = assembly.gtf)
+ 
+```
+
+Additionaly, we will need to specify a correct reference genome from which to retrieve transcripts sequences.
+Many reference genomes are made available by Bioconductor.
+
+In our example, we will use the *BSgenome* object containing the UCSC reference genome *Homo_sapiens* hg38:
+
+```{r genome2, eval = T, echo = T}
+
+BSgenome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+
+```
+
+There exist several approaches for predicting Open Reading Frames. It is far from being straightforward.    
+You will find more details and discussion in the  *IsoformSwitchAnalyzer* package:
+
+```{r isa_vignette, eval = T, echo = T, warning = F}
+
+vignette( "IsoformSwitchAnalyzeR" )
+ 
+```
+
+As for our own MCF10A assembly we do not have any external information about the CDS of transcripts, 
+we will to infer them from the sequences only (which is probably not the best method).
+
+```{r ORFs, eval = T, echo = T}
+
+orfMethod <- "mostUpstream"
+
+mySwitchList <- analyzeORF(switchAnalyzeRlist = mySwitchList, 
+                           genomeObject = BSgenome,
+                           orfMethod = orfMethod, 
+                           quiet = TRUE)
+ 
+```
+
+Typical output of the analysis of Open Reading Frames by *IsoformSwitchAnalyzeR* can be found in the *data.frame*:
+
+```{r , eval = F, echo = T}
+
+mySwitchList$orfAnalysis
+ 
+```
+
+In particular:
+
+```{r , eval = T, echo = T}
+
+mySwitchList$orfAnalysis %>% dplyr::select(isoform_id, 
+                                           orfStartGenomic, orfEndGenomic, 
+                                           stopDistanceToLastJunction, PTC) %>%
+                             head(15)
+ 
+```
+
+We can now get a contigency table of assembled transcripts with or without a PTC:
+
+```{r , eval = T, echo = T}
+
+table( mySwitchList$orfAnalysis$PTC )
+
+```
+
+<br />
+
+<!-- References -->
+# References
+
+1. _Middleton et al. **IRFinder:assessing the impact of intron retention on mammalian gene expression** Genome Biology. (2017)_
+2. _Broseus and Ritchie **Challenges in detecting and quantifying intron retention from NGS data.** CSBJ. (2020)_
+3. _Broseus et al. **TALC: Transcription Aware Long Read Correction.** BioRxiv. (2020)_
+4. _Li. **Minimap2: pairwise alignment for nucleotide sequences.** Bioinformatics (2018)_
+5. _Kovaka et al. **Transcriptome assembly from long-read RNA-seq alignments with StringTie2** Genome Biology (2019)_
+6. _Vacik et al. **Alternative intronic promoters in development and disease.** Protoplasma (2017)_
+7. _Vitting-Seerup et al. **IsoformSwitchAnalyzeR: Analysis of changes in genome-wide patterns of alternative splicing and its functional consequences.** Bioinformatics (2019)_
+8. _Anders et al. **Detecting Differential Usage of Exons from RNA-seq Data.** Genome Research (2008)_
+

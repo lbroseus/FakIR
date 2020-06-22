@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Lucile Broseus" />
+
+
+<title>IR events detection and interpretation using IRFindeR2</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">IR events detection and interpretation using IRFindeR2</h1>
+<h4 class="author">Lucile Broseus</h4>
+
+
+
+<p><br /></p>
+<!-- Introduction -->
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<!-- Abstract -->
+<div id="abstract" class="section level2">
+<h2>Abstract</h2>
+<p>Intron retention (IR) occurs when an intron in a pre-mRNA remains in the mature mRNA. An increasing body of literature has demonstrated a major role for IR in numerous biological functions and in disease. Although experimental technologies used to study other forms of mRNA splicing can also be used to investigate IR, a specialized downstream computational analysis is optimal for IR discovery and analysis. Here we provide a practical guide to detecting and analyzing IR using second and third generation RNA sequencing data. We also indicate code lines for predicting (in-silico) the potential impact of IR on gene expression and protein output.</p>
+<!-- Summary -->
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p><a href="#introduction">Introduction</a></p>
+<ul>
+<li><a href="#abstract">Abstract</a></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#package-installation">Package Installation</a></li>
+<li><a href="#external-data">External data</a></li>
+<li><a href="#bsgenome-representation-of-reference-genomes-in-r">BSGenome: representation of reference genomes in R</a></li>
+</ul>
+<p><a href="#ir-events-detection-from-second-generation-rna-seq-data">IR events detection: from Second Generation RNA-seq data</a></p>
+<ul>
+<li><a href="#prerequisite-compute-intron-coverage-information-with-irfinder">Prerequisite: compute intron coverage information with IRFinder</a></li>
+<li><a href="#extraction-of-intron-retention-events">Extraction of Intron Retention events</a></li>
+<li><a href="#about-other-ir-detection-approaches">About other IR detection approaches</a></li>
+</ul>
+<p><a href="#differential-analysis-of-ir-levels-from-second-generation-rna-seq-data">Differential Analysis of IR levels: from Second Generation RNA-seq data</a></p>
+<p><a href="#ir-events-detection-from-third-generation-rna-seq-data">IR events detection: from Third Generation RNA-seq data</a></p>
+<ul>
+<li><a href="#analysis-of-long-read-alignments">Analysis of long read alignments</a></li>
+<li><a href="#how-to-use-long-read-coverage-information">How to use long read coverage information</a></li>
+</ul>
+<p><a href="#ir-transcript-reconstruction-from-third-generation-rna-seq-data">IR transcript reconstruction: from Third Generation RNA-seq data</a></p>
+<ul>
+<li><a href="#typical-transcriptome-assembly-from-long-reads">Typical transcriptome assembly from long reads</a></li>
+<li><a href="#extraction-of-full-length-reads">Extraction of full-length reads</a></li>
+<li><a href="#extraction-of-ir-transcripts">Extraction of IR-transcripts</a></li>
+</ul>
+<p><a href="#ir-events-interpretation-prediction-of-ir-nmd-coupling">IR events interpretation: prediction of IR-NMD coupling</a></p>
+<ul>
+<li><a href="#detect-stop-codons-in-retained-introns">Detect stop codons in retained introns</a></li>
+<li><a href="#assume-hypothetical-ir-transcripts-using-a-transcriptome-annotation">Assume hypothetical IR-transcripts using a transcriptome annotation</a></li>
+<li><a href="#prediction-of-premature-termination-codons-in-assembled-transcripts">Prediction of Premature Termination Codons in assembled transcripts</a></li>
+</ul>
+<p><a href="#references">References</a></p>
+<p><br /></p>
+<!-- Installation -->
+</div>
+<div id="package-installation" class="section level2">
+<h2>Package Installation</h2>
+<p>The R package <em>IRFindeR2</em> can be installed from my gitlab account by copy-pasting the following code line:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">install_gitlab</span>(<span class="st">&quot;lbroseus/IRFindeR2&quot;</span>, <span class="dt">host =</span> <span class="st">&quot;gitlab.igh.cnrs.fr&quot;</span>)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"> </a></code></pre></div>
+<p>To start with, load <em>IRFindeR2</em>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="kw">suppressPackageStartupMessages</span>( <span class="kw">library</span>(IRFindeR2) )</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"> </a></code></pre></div>
+<p>We will also make use of the packages <em>dplyr</em> and <em>ggplot2</em>, available on the CRAN, to explore our IR results:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="cf">if</span>( <span class="op">!</span>(<span class="st">&quot;dplyr&quot;</span> <span class="op">%in%</span><span class="st"> </span><span class="kw">installed.packages</span>()) ) <span class="kw">install.packages</span>( <span class="st">&quot;dplyr&quot;</span> )</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">suppressPackageStartupMessages</span>( <span class="kw">library</span>(dplyr) )</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="cf">if</span>( <span class="op">!</span>(<span class="st">&quot;ggplot2&quot;</span> <span class="op">%in%</span><span class="st"> </span><span class="kw">installed.packages</span>()) ) <span class="kw">install.packages</span>( <span class="st">&quot;ggplot2&quot;</span> )</a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="kw">suppressPackageStartupMessages</span>( <span class="kw">library</span>(ggplot2) )</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"> </a></code></pre></div>
+<!-- External data -->
+</div>
+<div id="external-data" class="section level2">
+<h2>External data</h2>
+<p>For illustrating how to use this package to detect intron retention events, we provide extracts (chromosome 2) of all standard input files.</p>
+<p><br /></p>
+<p>Once you have installed <em>IRFindeR2</em>, these files can be found in folder:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"> </a></code></pre></div>
+<p>You will find extracts from several public reference data for <em>Homo Sapiens</em>.</p>
+<ol style="list-style-type: decimal">
+<li><strong>A reference transcriptome</strong>. An extraction of the annotated transcripts mapping on the chromosome 2, downloaded from <em>Ensembl</em>. We will make use of the release: <em>Homo_sapiens.GRCh38.97</em>:</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">gtf &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;Homo_sapiens.GRCh38.97.chr2.gtf&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"> </a></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li><strong>TSS inferred from CAGE data</strong>.</li>
+</ol>
+<p>An extraction of chromosome 2 of ENCODE/RIKEN CAGE data for the MCF7 cell line; we will make use of them to subset aligned full-length long read from a bam file (cf: <a href="#extraction-of-full-length-reads">Extraction of full-length reads</a>).</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">cageFile &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;GSM849364_hg38_wgEncodeRikenCageMcf7CellPapTssGencV7.chr2.gtf&quot;</span>, </a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">                       <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"> </a></code></pre></div>
+<p>More and complete public CAGE data for several cell lines can also be found at &lt;&gt;.</p>
+<p><br /></p>
+<p>Additionaly, we provide extracts from our own in-house matched Second and Third generation sequencing experiments, realised on the human cell line <em>MCF10A</em>.<br />
+The full raw datasets can be downloaded from <em>GEO</em>, under accession number <em>GSE126638</em> and were used and described in described in reference <em>3</em> (Supplementary Materials).</p>
+<p><em>MCF10A</em> data available in <em>IRFindeR2</em> package consists in:</p>
+<ol start="3" style="list-style-type: decimal">
+<li><strong>Second generation sequencing data</strong>.</li>
+</ol>
+<p>You will find a typical <em>IRFinder</em> output file on chromosome 2 from an Illumina RNA-seq experiment:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">irfinderFile &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.IRFinder-IR-dir.txt&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"> </a></code></pre></div>
+<p>This file will be used to detect IR events from short read RNA-seq data (cf: <a href="#extraction-of-intron-retention-events">Extraction of Intron Retention events</a>). For more information as to how to generate such a file, please refer to <a href="#prerequisite-compute-intron-coverage-information-with-irfinder">Prerequisite: compute intron coverage information with IRFinder</a>.</p>
+<ol start="4" style="list-style-type: decimal">
+<li><strong>Third generation sequencing data</strong>.</li>
+</ol>
+<p>We provide a <strong>bam file</strong> of direct-RNA-Nanopore alignments on the chromosome 2, performed using <em>Minimap2</em> (reference <em>4</em>):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">bamFile &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.dont.bam&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3"> </a></code></pre></div>
+<p>Additionaly, using full-length long reads from this bam file, we performed a transcript assembly that we will use especially in <a href="#prediction-of-premature-termination-codons-in-assembled-transcripts">Prediction of Premature Termination Codons in assembled transcripts</a>.<br />
+You can find this assembly in:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">assembly.gtf &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.dont_assembly.gtf&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"> </a></code></pre></div>
+</div>
+<div id="bsgenome-representation-of-reference-genomes-in-r" class="section level2">
+<h2>BSGenome: representation of reference genomes in R</h2>
+<p>When it comes to retrieve transcript sequence, many R functions make use of reference genome represented as a <em>BSGenome</em> object.</p>
+<p>You will need to identify, install and import a convenient reference to reproduce the following analyses on you own data. This can be done by adapting the code below to your organism and version of interest:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="co"># Display available genomes and identify the one that fits your data:</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3">BSgenome<span class="op">::</span><span class="kw">available.genomes</span>()</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"> </a>
+<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="co"># Specify the reference of your choice:</span></a>
+<a class="sourceLine" id="cb10-6" data-line-number="6">yourGenomeChoice &lt;-<span class="st"> &quot;BSgenome.Hsapiens.UCSC.hg38&quot;</span></a>
+<a class="sourceLine" id="cb10-7" data-line-number="7"> </a>
+<a class="sourceLine" id="cb10-8" data-line-number="8"><span class="co"># Download its representation in R:</span></a>
+<a class="sourceLine" id="cb10-9" data-line-number="9"><span class="cf">if</span> (<span class="kw">interactive</span>()) {</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">    <span class="cf">if</span> (<span class="op">!</span><span class="kw">require</span>(<span class="st">&quot;BiocManager&quot;</span>))</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">        <span class="kw">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">    BiocManager<span class="op">::</span><span class="kw">install</span>( yourGenomeChoice )</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">}</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14"> </a>
+<a class="sourceLine" id="cb10-15" data-line-number="15"><span class="co"># Import into R:</span></a>
+<a class="sourceLine" id="cb10-16" data-line-number="16">BSgenome &lt;-<span class="st"> </span><span class="kw">getBSgenome</span>(<span class="dt">genome =</span> yourGenomeChoice, <span class="dt">masked=</span><span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb10-17" data-line-number="17"> </a></code></pre></div>
+<p>For our toy dataset extracted from experiments carried on the human cell line MCF10A, we will import the hg38 reference genome:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">BSgenome &lt;-<span class="st"> </span>BSgenome.Hsapiens.UCSC.hg38<span class="op">::</span>BSgenome.Hsapiens.UCSC.hg38</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"> </a></code></pre></div>
+<p><br /></p>
+</div>
+</div>
+<div id="ir-events-detection-from-second-generation-rna-seq-data" class="section level1">
+<h1>IR events detection: from Second Generation RNA-seq data</h1>
+<div id="prerequisite-compute-intron-coverage-information-with-irfinder" class="section level2">
+<h2>Prerequisite: compute intron coverage information with IRFinder</h2>
+<p>We will start from computations output using <em>IRFinder</em> (cf: <a href="https://github.com/williamritchie/IRFinder" class="uri">https://github.com/williamritchie/IRFinder</a> for more details and reference <em>1</em>).</p>
+<p><br /></p>
+<p>First, you need to build a specific genome index and indicate.<br />
+Then, <em>IRFinder</em> will call the aligner <em>STAR</em> and perform several computations based on the read coverage of introns.</p>
+<p><br /></p>
+<p>Eventually, <em>IRFinder</em> will output several indicators (in a file named <em>IRFinder-IR-dir.txt</em>), which are used to filter the best supported IR events (cf: reference <em>2</em>).</p>
+<p><br /></p>
+<p>Here is an example of typical command lines for <em>Homo Sapiens</em> data, using the <em>hg38</em> reference genome and the release 97 of <em>Ensembl</em> human transcriptome (see also for examples with versions and genomes: <a href="http://mimirna.centenary.org.au/irfinder/genomes.html" class="uri">http://mimirna.centenary.org.au/irfinder/genomes.html</a>):</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="co">#Step 1: Build a genome index:</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb12-4" data-line-number="4">bin<span class="op">/</span>IRFinder <span class="op">-</span>m BuildRef <span class="op">-</span>r REF<span class="op">/</span>Human<span class="op">-</span>hg38<span class="op">-</span>release97 \</a>
+<a class="sourceLine" id="cb12-5" data-line-number="5">    <span class="op">-</span>e REF<span class="op">/</span>extra<span class="op">-</span>input<span class="op">-</span>files<span class="op">/</span>RNA.SpikeIn.ERCC.fasta.gz \</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">    <span class="op">-</span>R REF<span class="op">/</span>extra<span class="op">-</span>input<span class="op">-</span>files<span class="op">/</span>Human_hg38_nonPolyA_ROI.bed \</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">    ftp<span class="op">:</span><span class="er">//</span>ftp.ensembl.org<span class="op">/</span>pub<span class="op">/</span>release<span class="dv">-97</span><span class="op">/</span>gtf<span class="op">/</span>homo_sapiens<span class="op">/</span>Homo_sapiens.GRCh38.<span class="fl">97.</span>gtf.gz</a>
+<a class="sourceLine" id="cb12-8" data-line-number="8"> </a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="co">#Step 2: align (paired-end) reads with STAR and analyse intron coverage:</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">bin<span class="op">/</span>IRFinder <span class="op">-</span>r REF<span class="op">/</span>Human<span class="op">-</span>hg38<span class="op">-</span>release97  <span class="op">-</span>d irfinder READ_<span class="fl">1.</span>fastq READ_<span class="fl">2.</span>fastq</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5"> </a></code></pre></div>
+</div>
+<div id="extraction-of-intron-retention-events" class="section level2">
+<h2>Extraction of Intron Retention events</h2>
+<p>IRFinder outputs a file named <em>IRFinder-IR-dir.txt</em> containing a series of variables describing coverage properties of annotated introns. These are used to decide whether it shows convincing evidence of retention.<br />
+For illustration purposes, we provide as <a href="#external-data">External data</a>, IRFinder results obtained from an Illumina RNA-seq experiment carried out on the MCF10A cell line:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb14-2" data-line-number="2">irfinderFile &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.IRFinder-IR-dir.txt&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb14-3" data-line-number="3"> </a></code></pre></div>
+<p>Let’s have a look at variables computed by <em>IRFinder</em>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2">irfinder_results &lt;-<span class="st"> </span><span class="kw">read.table</span>(irfinderFile, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
+<a class="sourceLine" id="cb15-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="kw">head</span>(irfinder_results, <span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="co">#&gt;    Chr  Start    End                          Name Null Strand ExcludedBases</span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="co">#&gt; 1    2  41627  42808 FAM110C/ENSG00000184731/clean    0      -            10</span></a>
+<a class="sourceLine" id="cb15-7" data-line-number="7"><span class="co">#&gt; 2    2  41627  45439 FAM110C/ENSG00000184731/clean    0      -           164</span></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8"><span class="co">#&gt; 3    2  41627  46806 FAM110C/ENSG00000184731/clean    0      -          1240</span></a>
+<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="co">#&gt; 4    2 219001 224863  SH3YL1/ENSG00000035115/clean    0      -           614</span></a>
+<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="co">#&gt; 5    2 219001 229965  SH3YL1/ENSG00000035115/clean    0      -          1013</span></a>
+<a class="sourceLine" id="cb15-11" data-line-number="11"><span class="co">#&gt; 6    2 222954 224867  SH3YL1/ENSG00000035115/clean    0      -            14</span></a>
+<a class="sourceLine" id="cb15-12" data-line-number="12"><span class="co">#&gt; 7    2 224920 229965  SH3YL1/ENSG00000035115/clean    0      -           342</span></a>
+<a class="sourceLine" id="cb15-13" data-line-number="13"><span class="co">#&gt; 8    2 231191 233100  SH3YL1/ENSG00000035115/clean    0      -            10</span></a>
+<a class="sourceLine" id="cb15-14" data-line-number="14"><span class="co">#&gt; 9    2 231191 234159  SH3YL1/ENSG00000035115/clean    0      -           149</span></a>
+<a class="sourceLine" id="cb15-15" data-line-number="15"><span class="co">#&gt; 10   2 233229 234159  SH3YL1/ENSG00000035115/clean    0      -            10</span></a>
+<a class="sourceLine" id="cb15-16" data-line-number="16"><span class="co">#&gt;     Coverage IntronDepth IntronDepth25Percentile IntronDepth50Percentile</span></a>
+<a class="sourceLine" id="cb15-17" data-line-number="17"><span class="co">#&gt; 1  0.4440650    0.543710                       0                       0</span></a>
+<a class="sourceLine" id="cb15-18" data-line-number="18"><span class="co">#&gt; 2  0.4764250    0.550685                       0                       0</span></a>
+<a class="sourceLine" id="cb15-19" data-line-number="19"><span class="co">#&gt; 3  0.4628080    0.502219                       0                       0</span></a>
+<a class="sourceLine" id="cb15-20" data-line-number="20"><span class="co">#&gt; 4  0.2707700    0.000000                       0                       0</span></a>
+<a class="sourceLine" id="cb15-21" data-line-number="21"><span class="co">#&gt; 5  0.1679230    0.000000                       0                       0</span></a>
+<a class="sourceLine" id="cb15-22" data-line-number="22"><span class="co">#&gt; 6  0.1258560    0.000000                       0                       0</span></a>
+<a class="sourceLine" id="cb15-23" data-line-number="23"><span class="co">#&gt; 7  0.0531576    0.000000                       0                       0</span></a>
+<a class="sourceLine" id="cb15-24" data-line-number="24"><span class="co">#&gt; 8  0.5629280    1.151120                       0                       1</span></a>
+<a class="sourceLine" id="cb15-25" data-line-number="25"><span class="co">#&gt; 9  0.4569000    0.476528                       0                       0</span></a>
+<a class="sourceLine" id="cb15-26" data-line-number="26"><span class="co">#&gt; 10 0.2380430    0.000000                       0                       0</span></a>
+<a class="sourceLine" id="cb15-27" data-line-number="27"><span class="co">#&gt;    IntronDepth75Percentile ExonToIntronReadsLeft ExonToIntronReadsRight</span></a>
+<a class="sourceLine" id="cb15-28" data-line-number="28"><span class="co">#&gt; 1                        2                     0                      0</span></a>
+<a class="sourceLine" id="cb15-29" data-line-number="29"><span class="co">#&gt; 2                        2                     0                      0</span></a>
+<a class="sourceLine" id="cb15-30" data-line-number="30"><span class="co">#&gt; 3                        2                     0                      0</span></a>
+<a class="sourceLine" id="cb15-31" data-line-number="31"><span class="co">#&gt; 4                        1                     9                      0</span></a>
+<a class="sourceLine" id="cb15-32" data-line-number="32"><span class="co">#&gt; 5                        0                     9                      0</span></a>
+<a class="sourceLine" id="cb15-33" data-line-number="33"><span class="co">#&gt; 6                        0                     3                      0</span></a>
+<a class="sourceLine" id="cb15-34" data-line-number="34"><span class="co">#&gt; 7                        0                     0                      0</span></a>
+<a class="sourceLine" id="cb15-35" data-line-number="35"><span class="co">#&gt; 8                        3                     0                      0</span></a>
+<a class="sourceLine" id="cb15-36" data-line-number="36"><span class="co">#&gt; 9                        2                     0                      0</span></a>
+<a class="sourceLine" id="cb15-37" data-line-number="37"><span class="co">#&gt; 10                       0                     1                      0</span></a>
+<a class="sourceLine" id="cb15-38" data-line-number="38"><span class="co">#&gt;    IntronDepthFirst50bp IntronDepthLast50bp SpliceLeft SpliceRight SpliceExact</span></a>
+<a class="sourceLine" id="cb15-39" data-line-number="39"><span class="co">#&gt; 1                   0.0                   0         32           2           2</span></a>
+<a class="sourceLine" id="cb15-40" data-line-number="40"><span class="co">#&gt; 2                   0.0                   0         32          21          20</span></a>
+<a class="sourceLine" id="cb15-41" data-line-number="41"><span class="co">#&gt; 3                   0.0                   3         32          11           9</span></a>
+<a class="sourceLine" id="cb15-42" data-line-number="42"><span class="co">#&gt; 4                   8.5                   0        220          94          94</span></a>
+<a class="sourceLine" id="cb15-43" data-line-number="43"><span class="co">#&gt; 5                   8.5                   0        220         202         122</span></a>
+<a class="sourceLine" id="cb15-44" data-line-number="44"><span class="co">#&gt; 6                   3.0                   0          0           0           0</span></a>
+<a class="sourceLine" id="cb15-45" data-line-number="45"><span class="co">#&gt; 7                   0.0                   0         80         202          80</span></a>
+<a class="sourceLine" id="cb15-46" data-line-number="46"><span class="co">#&gt; 8                   1.0                   0        122         106         106</span></a>
+<a class="sourceLine" id="cb15-47" data-line-number="47"><span class="co">#&gt; 9                   1.0                   0        122         141          16</span></a>
+<a class="sourceLine" id="cb15-48" data-line-number="48"><span class="co">#&gt; 10                  0.0                   0        125         141         125</span></a>
+<a class="sourceLine" id="cb15-49" data-line-number="49"><span class="co">#&gt;        IRratio     Warnings</span></a>
+<a class="sourceLine" id="cb15-50" data-line-number="50"><span class="co">#&gt; 1  0.013687100     LowCover</span></a>
+<a class="sourceLine" id="cb15-51" data-line-number="51"><span class="co">#&gt; 2  0.014669900 MinorIsoform</span></a>
+<a class="sourceLine" id="cb15-52" data-line-number="52"><span class="co">#&gt; 3  0.014256600     LowCover</span></a>
+<a class="sourceLine" id="cb15-53" data-line-number="53"><span class="co">#&gt; 4  0.001229260 MinorIsoform</span></a>
+<a class="sourceLine" id="cb15-54" data-line-number="54"><span class="co">#&gt; 5  0.000762703 MinorIsoform</span></a>
+<a class="sourceLine" id="cb15-55" data-line-number="55"><span class="co">#&gt; 6  0.000000000     LowCover</span></a>
+<a class="sourceLine" id="cb15-56" data-line-number="56"><span class="co">#&gt; 7  0.000263087 MinorIsoform</span></a>
+<a class="sourceLine" id="cb15-57" data-line-number="57"><span class="co">#&gt; 8  0.009347190            -</span></a>
+<a class="sourceLine" id="cb15-58" data-line-number="58"><span class="co">#&gt; 9  0.003229960 MinorIsoform</span></a>
+<a class="sourceLine" id="cb15-59" data-line-number="59"><span class="co">#&gt; 10 0.001685410            -</span></a></code></pre></div>
+<p>IR events calling, using advised parameters (see reference <em>1</em> and <em>2</em>), can be achieved directly (or adjusted) from a standard <em>IRFinder-IR-dir.txt</em> file as follows:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="co"># Main variables from which IR events are inferred:</span></a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">minIRratio &lt;-<span class="st"> </span><span class="fl">0.1</span></a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">minSpliceRead &lt;-<span class="st"> </span><span class="dv">3</span></a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">minExonToIntronReads &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb16-6" data-line-number="6">minCoverage &lt;-<span class="st"> </span><span class="fl">0.1</span></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb16-8" data-line-number="8"><span class="co"># Import the file IRFinder-IR-dir.txt and extract filter IR events:</span></a>
+<a class="sourceLine" id="cb16-9" data-line-number="9">ir_events &lt;-<span class="st"> </span><span class="kw">filterIRevents</span>(<span class="dt">irfinderFile =</span> irfinderFile, </a>
+<a class="sourceLine" id="cb16-10" data-line-number="10">                            <span class="dt">minIRratio =</span> minIRratio, </a>
+<a class="sourceLine" id="cb16-11" data-line-number="11">                            <span class="dt">minSpliceRead =</span> minSpliceRead, </a>
+<a class="sourceLine" id="cb16-12" data-line-number="12">                            <span class="dt">minExonToIntronReads =</span> minExonToIntronReads,</a>
+<a class="sourceLine" id="cb16-13" data-line-number="13">                            <span class="dt">minCoverage =</span> minCoverage)</a>
+<a class="sourceLine" id="cb16-14" data-line-number="14"> </a></code></pre></div>
+</div>
+<div id="about-other-ir-detection-approaches" class="section level2">
+<h2>About other IR detection approaches</h2>
+<p>Other softwares have been developed to compute intron coverage information (eg: KMA and iRead). You can use them (or your own filtering method) instead of IRFinder to select credible IR events, and still apply the following workflow.<br />
+At this step, all you need is to feed the variable <em>ir_events</em> with the genomic intervals of your retained introns as a <em>GRanges</em> object or as a data.frame that can be coerced to a <em>GRanges</em> object (typically with columns chr/seqnames, start, end, strand).</p>
+<p><br /></p>
+</div>
+</div>
+<div id="differential-analysis-of-ir-levels-from-second-generation-rna-seq-data" class="section level1">
+<h1>Differential Analysis of IR levels: from Second Generation RNA-seq data</h1>
+<p>Though it would deserve more precautions (and benchmarking), most approaches that have been proposed so far simply consist in applying existing well-known methods for differential analysis (eg: DESeq2, edgeR, DEXSeq) to intronic features (see reference <em>2</em> for a discussion).<br />
+IRFindeR2 includes a wrapper to perform end-to-end differential analysis of introns through DEXSeq.<br />
+Please refer to the DEXSeq vignette (<a href="https://www.bioconductor.org/packages/release/bioc/vignettes/DEXSeq/inst/doc/DEXSeq.html" class="uri">https://www.bioconductor.org/packages/release/bioc/vignettes/DEXSeq/inst/doc/DEXSeq.html</a>) and to the paper (reference <em>8</em>) for more information about the method in itself.</p>
+<p>To carry out differential analysis of IR-levels using IRFindeR2, you will need:</p>
+<ol style="list-style-type: decimal">
+<li>a reference transcriptome in a gtf file (from which to extract intron genomic coordinates);</li>
+<li>bam files for all samples to be considered in the differential analysis;</li>
+<li>to know how samples should be grouped together (!)</li>
+<li>and the library type of your samples (ie: whether they are single or paired-end).</li>
+</ol>
+<p>So first, indicate a gtf file for your reference transcriptome. Please adapt the path.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">gtf &lt;-<span class="st"> &quot;Your_favourite_organism_versionXXX.gtf&quot;</span></a>
+<a class="sourceLine" id="cb17-3" data-line-number="3">   </a></code></pre></div>
+<p>Then, you must provide the paths to your input bam files and indicate how your samples should be grouped together in the differential test (a “target”). You may also have this in a separate text file and import it into R as a data.frame.</p>
+<p>Here is a toy example:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb18-2" data-line-number="2">files &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;sample1.WT.bam&quot;</span>, <span class="st">&quot;sample2.WT.bam&quot;</span>, <span class="st">&quot;sample3.WT.bam&quot;</span>,</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3">           <span class="st">&quot;sample1.KO.bam&quot;</span>, <span class="st">&quot;sample2.KO.bam&quot;</span>, <span class="st">&quot;sample3.KO.bam&quot;</span>)</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb18-5" data-line-number="5">conditions &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;WT&quot;</span>, <span class="st">&quot;WT&quot;</span>, <span class="st">&quot;WT&quot;</span>, </a>
+<a class="sourceLine" id="cb18-6" data-line-number="6">                <span class="st">&quot;KO&quot;</span>, <span class="st">&quot;KO&quot;</span>, <span class="st">&quot;KO&quot;</span>) </a>
+<a class="sourceLine" id="cb18-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb18-8" data-line-number="8">libType &lt;-<span class="st"> &quot;single-end&quot;</span> <span class="co"># choose between &quot;single-end&quot; or &quot;paired-end&quot;</span></a>
+<a class="sourceLine" id="cb18-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb18-10" data-line-number="10">target &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">file =</span> files, <span class="dt">condition =</span> conditions)</a>
+<a class="sourceLine" id="cb18-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb18-12" data-line-number="12">target</a>
+<a class="sourceLine" id="cb18-13" data-line-number="13"><span class="co">#&gt;             file condition</span></a>
+<a class="sourceLine" id="cb18-14" data-line-number="14"><span class="co">#&gt; 1 sample1.WT.bam        WT</span></a>
+<a class="sourceLine" id="cb18-15" data-line-number="15"><span class="co">#&gt; 2 sample2.WT.bam        WT</span></a>
+<a class="sourceLine" id="cb18-16" data-line-number="16"><span class="co">#&gt; 3 sample3.WT.bam        WT</span></a>
+<a class="sourceLine" id="cb18-17" data-line-number="17"><span class="co">#&gt; 4 sample1.KO.bam        KO</span></a>
+<a class="sourceLine" id="cb18-18" data-line-number="18"><span class="co">#&gt; 5 sample2.KO.bam        KO</span></a>
+<a class="sourceLine" id="cb18-19" data-line-number="19"><span class="co">#&gt; 6 sample3.KO.bam        KO</span></a></code></pre></div>
+<p>Now, we are ready to run DEXSeq computations through our wrapper function:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb19-2" data-line-number="2">idxd &lt;-<span class="st"> </span><span class="kw">DEXSeq4Introns</span>(gtf, target, libType, <span class="dt">verbose =</span> <span class="ot">TRUE</span>) </a>
+<a class="sourceLine" id="cb19-3" data-line-number="3">   </a></code></pre></div>
+<p>This will run intron read counting, estimation of size factors, estimation of dispersions, the differential test and estimation of intron fold changes. It may take a while…</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb20-2" data-line-number="2"><span class="kw">table</span> ( idxd<span class="op">$</span>padj <span class="op">&lt;</span><span class="st"> </span><span class="fl">0.1</span> ) </a>
+<a class="sourceLine" id="cb20-3" data-line-number="3">   </a></code></pre></div>
+<p><br /></p>
+</div>
+<div id="ir-events-detection-from-third-generation-rna-seq-data" class="section level1">
+<h1>IR events detection: from Third Generation RNA-seq data</h1>
+<div id="analysis-of-long-read-alignments" class="section level2">
+<h2>Analysis of long read alignments</h2>
+<p>The first step for a reference-based analysis is to define <em>independent</em> intron intervals from a reference transcriptome (see ref 2 for more details on intron definition).<br />
+Here, we use the annotation <em>Homo_sapiens.GRCh38.97</em> provided by <em>Ensembl</em>.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb21-2" data-line-number="2">intronGR &lt;-<span class="st"> </span><span class="kw">createIntronGR</span>(<span class="dt">gtf =</span> gtf)</a>
+<a class="sourceLine" id="cb21-3" data-line-number="3"> </a></code></pre></div>
+<p>This generates a <em>GRanges</em> object with <em>independent</em> intron intervals as well as their gene of origin:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb22-2" data-line-number="2">intronGR</a>
+<a class="sourceLine" id="cb22-3" data-line-number="3"><span class="co">#&gt; GRanges object with 23056 ranges and 2 metadata columns:</span></a>
+<a class="sourceLine" id="cb22-4" data-line-number="4"><span class="co">#&gt;           seqnames              ranges strand |         gene_id</span></a>
+<a class="sourceLine" id="cb22-5" data-line-number="5"><span class="co">#&gt;              &lt;Rle&gt;           &lt;IRanges&gt;  &lt;Rle&gt; |     &lt;character&gt;</span></a>
+<a class="sourceLine" id="cb22-6" data-line-number="6"><span class="co">#&gt;       [1]        2       199902-200163      + | ENSG00000227061</span></a>
+<a class="sourceLine" id="cb22-7" data-line-number="7"><span class="co">#&gt;       [2]        2       202606-202915      + | ENSG00000227061</span></a>
+<a class="sourceLine" id="cb22-8" data-line-number="8"><span class="co">#&gt;       [3]        2       202989-209484      + | ENSG00000227061</span></a>
+<a class="sourceLine" id="cb22-9" data-line-number="9"><span class="co">#&gt;       [4]        2       264499-264722      + | ENSG00000143727</span></a>
+<a class="sourceLine" id="cb22-10" data-line-number="10"><span class="co">#&gt;       [5]        2       265008-265204      + | ENSG00000143727</span></a>
+<a class="sourceLine" id="cb22-11" data-line-number="11"><span class="co">#&gt;       ...      ...                 ...    ... .             ...</span></a>
+<a class="sourceLine" id="cb22-12" data-line-number="12"><span class="co">#&gt;   [23052]        2 242047764-242048057      - | ENSG00000232002</span></a>
+<a class="sourceLine" id="cb22-13" data-line-number="13"><span class="co">#&gt;   [23053]        2 242048284-242058047      - | ENSG00000232002</span></a>
+<a class="sourceLine" id="cb22-14" data-line-number="14"><span class="co">#&gt;   [23054]        2 242058885-242059119      - | ENSG00000232002</span></a>
+<a class="sourceLine" id="cb22-15" data-line-number="15"><span class="co">#&gt;   [23055]        2 242059194-242060296      - | ENSG00000232002</span></a>
+<a class="sourceLine" id="cb22-16" data-line-number="16"><span class="co">#&gt;   [23056]        2 242060520-242084095      - | ENSG00000232002</span></a>
+<a class="sourceLine" id="cb22-17" data-line-number="17"><span class="co">#&gt;           annotated_intron</span></a>
+<a class="sourceLine" id="cb22-18" data-line-number="18"><span class="co">#&gt;                   &lt;factor&gt;</span></a>
+<a class="sourceLine" id="cb22-19" data-line-number="19"><span class="co">#&gt;       [1]                0</span></a>
+<a class="sourceLine" id="cb22-20" data-line-number="20"><span class="co">#&gt;       [2]                0</span></a>
+<a class="sourceLine" id="cb22-21" data-line-number="21"><span class="co">#&gt;       [3]                0</span></a>
+<a class="sourceLine" id="cb22-22" data-line-number="22"><span class="co">#&gt;       [4]                0</span></a>
+<a class="sourceLine" id="cb22-23" data-line-number="23"><span class="co">#&gt;       [5]                1</span></a>
+<a class="sourceLine" id="cb22-24" data-line-number="24"><span class="co">#&gt;       ...              ...</span></a>
+<a class="sourceLine" id="cb22-25" data-line-number="25"><span class="co">#&gt;   [23052]                0</span></a>
+<a class="sourceLine" id="cb22-26" data-line-number="26"><span class="co">#&gt;   [23053]                0</span></a>
+<a class="sourceLine" id="cb22-27" data-line-number="27"><span class="co">#&gt;   [23054]                0</span></a>
+<a class="sourceLine" id="cb22-28" data-line-number="28"><span class="co">#&gt;   [23055]                0</span></a>
+<a class="sourceLine" id="cb22-29" data-line-number="29"><span class="co">#&gt;   [23056]                0</span></a>
+<a class="sourceLine" id="cb22-30" data-line-number="30"><span class="co">#&gt;   -------</span></a>
+<a class="sourceLine" id="cb22-31" data-line-number="31"><span class="co">#&gt;   seqinfo: 1 sequence from an unspecified genome; no seqlengths</span></a></code></pre></div>
+<p>Introns that are already part of an reference transcript (transcripts annotated as <em>retained_intron</em>) can be identified by the value 1 in column <em>annotated_intron</em>:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb23-2" data-line-number="2"><span class="kw">table</span>( intronGR<span class="op">$</span>annotated_intron )</a>
+<a class="sourceLine" id="cb23-3" data-line-number="3"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb23-4" data-line-number="4"><span class="co">#&gt;     0     1 </span></a>
+<a class="sourceLine" id="cb23-5" data-line-number="5"><span class="co">#&gt; 17080  5976</span></a></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb24-2" data-line-number="2"><span class="kw">data.frame</span>(intronGR) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">intron_width =</span> end <span class="op">-</span><span class="st"> </span>start <span class="op">+</span><span class="st"> </span><span class="dv">1</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb24-3" data-line-number="3"><span class="st">                         </span><span class="kw">ggplot</span>(<span class="kw">aes</span>(intron_width, <span class="dt">fill =</span> annotated_intron)) <span class="op">+</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb24-4" data-line-number="4"><span class="st">                         </span><span class="kw">geom_histogram</span>(<span class="dt">bins =</span> <span class="dv">25</span>, <span class="dt">color =</span> <span class="st">&quot;orange&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">scale_x_log10</span>() <span class="op">+</span></a>
+<a class="sourceLine" id="cb24-5" data-line-number="5"><span class="st">                         </span><span class="kw">theme_minimal</span>() <span class="op">+</span><span class="st"> </span><span class="kw">scale_fill_manual</span>(<span class="dt">values =</span> <span class="kw">c</span>(<span class="st">&quot;darkblue&quot;</span>, <span class="st">&quot;lightblue&quot;</span>)) <span class="op">+</span></a>
+<a class="sourceLine" id="cb24-6" data-line-number="6"><span class="st">                         </span><span class="kw">ggtitle</span>(<span class="st">&quot;Independent intron width (Homo Sapiens, chromosome 2)&quot;</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA8AAAAHgCAMAAABdO/S2AAAAFVBMVEUAAAAAAItNTU2t2Obr6+v/pQD///98yjEJAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAWn0lEQVR4nO2dDXviOBIGvWyW//+T72bCh21ZMry22t2tqnsm5DBNYdkVSJjJTncACMt09QMAAB0CBggMAQMEhoABAkPAAIEhYIDAHAt42hzfvla5p8N3W72H96fl3U6zK7+VTn/45AF8c5fCkA5f0kPhPuBqaYJlHfD7w/pWYsDTk/0H8M2dCkOK5ldk/PUCjhEo4BMsq+nNgJdXfmV5ltt6Ev4ek6JmX3goOBIEfGrApzy22r32ZNYuAUfihIB/X3K+nnum18nwOineLyrnX+XbM7+b5y9Iny9t5xuek9PWHc8f4OyF8XvwZV5PrFNc3f37BsvXy8tn3ue22QJU9nJ23fb8fXZPHz6caVpft3XjQrnYefDPOQG/z7Vp+enyuvmVOzP3Z11FwIsN7wDLO54/wMXpO5V3sZq4r+9gHePysc/WY35H0/xrzfyR1BZhtbaP6943q+3txsNZL3/txmvlYufBP6cEvHw5+jzX7qsnj9aVezPNufKKdsDrx1xOvKKrPM5pfc+zFXlWMbOWD2K1obyfzfntvd16ONsf5jfeaHXxyCEG5zwD3+cnRXGaVq/8YHMR8HLD4jTcOi8X5+vKt3EXmwGv737zvuaLMruzcryxCMXSLh5RbW+3Hs5qd6o3notfD5uAA9Ev4M3Tf3nlB5svC7iQfhzwM4VK/9uLsPFydvnZtwHPXzxs33glnX/ZuUMU+gW8uM32lTszJwX851rbgJ+FbI5v7uW9KPhYwK873LvxzLc+YhCB7AHfnwFv+E4PuJz6OODlgy72+/uAP3zsb8lsyQg4DqcG/PzwfP65Lz9bXLkzs7r3e3XuvnXF4mx83fPa92nAn3x4u97OrQXY3svV/SzNm1/sDn/Y/Nld+Tk45+yAZ998vV7Evb/Z2v4md2tmvnkmW294F7P4nm99Oi7P/Lnvw4AXd7/4OrD+PnJx5+sFqO3l+lvWylpt7+3Ww9lY8vZjXx6lxiEHX5wb8N/zYP7p74b3ibI8R1ozq4/3IuD5KX2ftibXY1u+jwJe3f1ir+f9zsN5FrxYgOpebrVTfk3a3tvNh7Nc8uqNVw+cgMPR/1hFOx1Of7xf3aGDxYp2wMaGgNcQsIPHAJ9CwAVnP+Bv7s/BWoU7XmNDwCUXBuyAWI92eDhcAIEhYIDAEDBAYAgYIDAEDBAYAgYIDAEDBMYy4B9D12XKEYxD7OQFy6pAwBgjKEcwShAwxgjKEYwSBIwxgnIEowQBY4ygHMEoQcAYIyhHMEoQMMYIyhGMEgSMMYJyBKMEAWOMoBzBKEHAGCMoRzBKEDDGCMoRjBIEjDGCcgSjBAFjjKAcwShBwBgjKEcwShAwxgjKEYwSBIwxgnIEowQBY4ygHMEoQcAYIyhHMEoQcHzjfw06Kfvc7eBGCQKOb/zvnyoEHMgoQcDxjQScwyhBwPGNBJzDKEHA8Y0EnMMoQcDxjQScwyhBwPGNBJzDKEHA8Y0EnMMoQcDxjQScwyhBwPGNBJzDKEHA8Y0EnMMoQcDxjQScwyhBwPGNBJzDKEHA8Y0EnMMoQcDxjQScwyhBwPGNrYD7/FPDIZbV3ChBwPGNrYDrm448Ow+xrOZGCQKObyTgHEYJAo5vJOAcRgkCjm8k4BxGiUbAt9uteiFBwH2MBJzDKFEP+Pb7Z/NCg4D7GAk4h1Gi/RKagCMYCTiHUaIV8O2ZKwG7NhJwDqMEz8DxjQScwyhxJOAfcIEa8NWPOyJ9axTgh1jxjTwD5zBKEHB8IwHnMErwPnB8IwHnMErwN7HiGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgOMbCTiHUYKA4xsJOIdRgoDjGwk4h1GCgGMY/2tBwCmMEgQcw9gskYBTGCUIOIaRgPMbJQg4hpGA8xslCDiGkYDzGyUIOIaRgPMbJQg4hpGA8xslCDiGsUfADa7ZycGNEgQcw9gj4Mama3ZycKMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+o8SRgH/ADOOAr95dt5wW3lnwDBzDyDNwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBJwfqMEAccwEnB+owQBxzAScH6jBAHHMBoH3KLfTjYYwShBwDGMxgG3xvrtZIMRjBIEHMNIwPmNEgQcw0jA+Y0SjYBvt1v1QoKAdQg4v1GiHvDt98/mhQYB6xBwfqNE+yU0AXsxEnB+o0Qz4NudgJ0YCTi/UaIV8O35oRLwD5jhKOCrl+JS+tYo0Poh1usjz8CXGx0F3G8nG4xglGj/EOtOwE6MBJzfKEHAMYwEnN8o0Qj49vueL+8DezAScH6jBH8Ty5Gx9U8ICDi9UYKAHRmNSxTHDu6kxghGCQJ2ZCTgKiMYJQjYkZGAq4xglCBgR0YCrjKCUYKAHRkJuMoIRgkCdmQk4CojGCUI2JGRgKuMYJQgYEdGAq6S2Thtfvr9cHcIeAcCrhLcOFU+X1/xfcsE7MhIwFWCGz8NePda9WanQMA7EHAV78bp//y5uC8vH9fXPv69XD3tPkan3y2z277ucymWd/B7CHgHAq7i3PjbWePPvfL548/rfsqbVW/7mjCDgHcg4CoRjI/qqpezz9fbK3fx3rxx29eEGQS8AwFX8W6cHq+M/35eu3zfZlrd/nU3BHy1koC74Nz4+Ca1GfD8Ns/sCNidkoC74NzYfuYtXzYTsFslAXfBuXH+k6dFhcIPsWaX09Z9r8zSzmkQ8A4EXMW78e+bPlP5bPl+u+h1m/lbQ5tvI71GH1tebyPdCdi3kYCrjGCUIGBHRgKuMoJRgoAdGQm4Sm7jND3fV/p+dP1Zx6IJeAcCrjKCUYKAHRkJuMoIRonXG1IHnsU/hYB3IOAqIxglimfgjhDwDgRcZQSjBD/EcmQk4CojGCXmbyL3fg1NwDsQcJURjBKzl9Ddn4wJeAcCrjKCUYLvgR0ZCbiKc+P2f5Cu10ObQ8COjARcxblxc8GMA+5fMAHvQMBVnBs9BNz/jWAC3oGAqzg3egi4PwS8AwFXcW4k4DRKAu6Cc6OHgHkJfbmRgKs4N+4E3DGr9R3zd6EvNBJwFefGdsDz34J1Npa/ooOAdyDgKs6NBJxGScBdcG70EzDfA19oJOAqzo0eAubfA19uJOAqzo0eAu4PAe9AwFWcGwk4jZKAu+Dc6CJgXkJfbSTgKs6NHt4Hfv8G+V4Q8A4EXMW50cXfxFpfcToEvAMBV3FuJOA0yj3j9j/9fmBbojj2wU6ej3Oji4B5CW1hdFSiOPbBTp6Pc6OHgPkhlonRUYni2Ac7eT7OjS4C7g4B3wlYxLmRgNMoCbgLzo0efqnd678c3g0CvhOwyAhGiSM/xPqB73FUojh29QpeSiUFD8/AvI1kYnRUojj2wU6ej3Pjf/9uQMARlQTcBedGFwHzPrCF0VGJ4tgHO3k+zo0eAuZ9YBOjoxLFsQ928nycG10E3B0CvhOwiHMjAadREnAXnBv3Au6XGQEbGx2VKI59sJPn49zYDrjnd6YEbGx0VKI49sFOno9zI8/AaZQE3AXnRgJOoyTgLjg3EnAaJQF3wbmRgNMo8wfc4LplvdhIwGmU+QNubLpuWS82EnAaJQFfsqwXGwk4jZKAL1nWi438Taw0SgK+ZFkvNhJwGiUBX7KsFxsJOI2SgC9Z1ouNBJxGScCXLOvFRgJOoyTgS5b1YiMBp1ES8CXLerHRwy+16w8B3wm407JmMEoQsLExRoni2HXLmsEoQcDGxhglimPXLWsGowQBGxtjlCiOXbesGYwSBGxsjFGiOHbdsmYwShCwsTFGieLYdcuawShBwMbGGCWKY9ctawajBAEbG2OUKI5dt6wZjBIEbGyMUaI4dt2yZjBKELCxMUaJ4th1y5rBKEHAxsYYJYpj1y1rBqMEARsbY5Qojl23rBmMEgRsbIxRojh23bJmMEoQsLExRoni2HXLmsEoQcDGxhglimPXLWsGowQBGxtjlCiOXbesGYwSBNzD2PqvF9gmZTvWeVlNIeCCgQJ2k5TtWOdlNYWACwjYPinbsc7LagoBFxCwfVK2Y52X1RQCLiBg+6RsxzovqykEXEDA9knZjnVeVlMIuICA7ZOyHeu8rKYQcAEB2ydlO9Z5WU0h4AICtk/KdqzzsppCwAUEbJ+U7VjnZTWFgAsI2D4p27HOy2oKARcQsH1StmOdl9UUAi4gYPukbMc6L6spBFyQK+DWP1jwk5TtWL/VJuAKBKwSIynbsX6rTcAVWgHffj/ebuWFBAEfaCPEWL/VJuAK9YCfxf7+WV5oEPCBNkKM9VttAq6w+wxMwBViJGU71m+1CbgCAavESMp2rMWx1SbgCkcC/hmaGEn5Gbv6eJ1D3xoFeAZWcdRGiLFjq80zcAUCVnHURoixY6tNwBUIWMVRGyHGjq02AVfgfWAVR22EGDu22gRcgb+JpeKojRBjx1abgCsQsIqjNkKMHVttAq5AwCqO2ggxdmy1CbgCAas4aiPE2LHVJuAKBKziqI0QY8dWm4ArELCKozZCjB1bbQKuQMAqjtoIMXZstQm4AgGrOGojxNix1SbgCgSs4qiNEGPHVpuAKxCwiqM2QvznxI+tNgFXIGAVR238W8XRgzy22gRcgYBVHLVBwB0g4AIC7tQGAXeAgAsIuFMbBNwBAi4g4E5tEHAHCLiAgDu1QcAdIOACAu7UBgF3gIALCLhTG42A/fwHnI6tNgFXIGCVGAHXN7WenQmYgDcg4E5tEHAHCLiAgDu1QcAdIOACAu7UBgF3gIALCLhTGwTcAQIuIOADbbQg4A4QcAEBH2ijVSIBd4CACwj4QBsEbAwBFxDwgTYI2BgCLiDgA20QsDEEXEDAB9ogYGMIuICAD7RBwMYQcAEBH2iDgI0h4AICPtAGARtDwAUEfKANAjaGgAsI+EAbBGwMARcQ8IE2CNgYAi4g4ANtELAxBFxAwAfaIGBjCLiAgA+0QcDGEHABAR9og4CNIeACAj7QRviAG1x7IN0YJQhYxfgkDx9wY9O1B9KNUYKAVXqc5GKJBNwBAi4g4L2TnIAvOJBujBIErELAp41deyDdGCUIWIWATxu79kC6MUoQsAoBnzZ27YF0Y5QgYBX1bO3w+2EJuAMEXEDA//R5Q1ccayDumzh27YF0Y5QgYJX4ATc2ifsmjl17IN0YJQhYhYC/2UTAnSBgFQL+ZhMBd4KAVQj4m00E3IkjAf8MDQF/s6k5dvWh/ILTwjsLnoFVCPibTTwDd4KAVQj4m00E3AkCViHgbzYRcCcIWIWAv9lEwJ0gYBUC/mYTAXeCgFUI+JtNBNwJAlZx9Ltxzh8jYAIuGShgNyWKYwRMwCUEbF+iOEbABFxCwPYlimPaPzUkYHsIWCV1wK0xAvYEAasQMAE7gIBVHP1uHNsxAvYEAas4Ssp2jIA9QcAqjpKyHSNgTxCwiqOkbMcI2BMErOIoKdsxAvYEAas4Ssp2jIA9QcAqjpKyHSNgTxCwiqOkbMcI2BMErOIoKdsxAvYEAas4Ssp2jIA9QcAqjpKyHSNgTxCwiqOkbMfOD7hF/wNZgYALCLhTUrZj5wfcGut/ICsQcAEBd0rKdoyAPUHAKo6Ssh0jYE8QsIqjpGzHCNgTBKziKCnbMem37RBwJwhYxVFSbsYI2BwCVomRlO0YAZtDwCoxkrIdI2BzCFglRlK2YwRsDgGrxEjKdoyAzSFglRhJ2Y4RsDkErBIjKdsxAjaHgFViJGU7RsDmELBKjKRsxwjYHAJWiZGU7ViHgPf/pWEnCLiAgA+0EWKsQ8CNTf2O7R8IuICAD7QRYoyAzSFglRhJ2Y5p/9CBgA9AwCoxkvIzRsBdIGAVR22EGCPgLhCwiqM2QowRcBcIWMVRGyHGCLgLBNyk9VMZP22EGCPgLhBwk9b546eNEGME3AUCbkLAp42d/6u0TjlDqhBwgdOA1Xcv/bQRfYyAdQi49SzbPH9sT/LMYwSsQ8AEfPmYeABa2Jw6Dvg24NvtJrsI+MBJnnlMPACtMZtTxwFfBnx7/JEg4AMneeYx8YcQBHwn4PvOD7Ea2J7ko46JAR9/dU3ABR8viZqUiJ+zlbFimxjw8SdnAr6blyji52xlrNhmy+zcHSDgn12Mlx/gGLtn9Mn5HcflS+jzGOF3obGsSYwSBIwxgnIEowTvA2OMoBzBKMHfxMIYQTmCUYKAMUZQjmCUIGCMEZQjGCUIGGME5QhGCQLGGEE5glGCgDFGUI5glCBgjBGUIxglCBhjBOUIRgkCxhhBOYJRgoAxRlCOYJQgYIwRlCMYJQgYYwTlCEYJAsYYQTmCUYKAMUZQjmCUsAwYAE6GgAECQ8AAgSFggMAQMEBgCBggMAQMEJhsAW/9zsznb9LUf5+mMxo7eeS3hrqivo+3W5qdPIFcAW8e2cfvsk5z1Js7ec/xdWpvH+FJroCfR3dx/F8ndZoj39rJLLtZ38cc+3cWKQNeJps04NpOJtnL+j7yCnoOAQektZNZdnOEfTyDnAH/fpF+XtxzBry9k1l2c4R9PIOcARf/L2PAxf9L9EOsMfbxDNIGPOZL6Dwn9wj7eAYpA169C5H0feDNnUzzA54R9vEMsgUMMBQEDBAYAgYIDAEDBIaAAQJDwACBIWBnaAdkWl5yVIeBQ+2MafPTT6em3085qsPAofaLcGwIeDQ41M74m+A0/bn48/HP549PXxtmN33++XvxuPnz4prHD7ZwmJ3xN9fHn/vv5fuKx5/3TWcBr6coeAg4ys54JLh4MTytNrxvOg94cwqSw1F2xhcBz8ol4FHhKDuDgOEbOMrO+C7g3/8R8LhwlJ2xmeLs51OLIzaPdfFDrPUNISscZWfMO52mx/F5vY10rwf8eBvpPcWhHQGOMkBgCBggMAQcj+nB1Y8DHMBZABAYAgYIDAEDBIaAAQJDwACBIWCAwBAwQGAIGCAw/wO8Q+ZXhtPpRQAAAABJRU5ErkJggg==" /><!-- --></p>
+<p>We then compare long read genome alignments (bam file) to intron intervals using:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb25-2" data-line-number="2">IR_events &lt;-<span class="st"> </span><span class="kw">callIRevents</span>(bamFile, intronGR)</a>
+<a class="sourceLine" id="cb25-3" data-line-number="3"> </a></code></pre></div>
+<p>This will create a <em>data.frame</em> crossing long reads and the introns they overlap with, along with some properties of the events:<br />
+1. <strong>intron_fracoverlap</strong>: the proportion of the intron that is contained in the long read (taking into account splicing and possible gaps);<br />
+2. <strong>intron_startOverlap</strong>: indicates whether the 5’ exon-intron junction is contained in the long read;<br />
+3. <strong>intron_endOverlap</strong>: indicates whether the 3’ exon-intron junction is contained in the long read.</p>
+<p>The variables <em>intron_startOverlap</em> and <em>intron_endOverlap</em> can help ensure an intron overlap is an actual IR events, rather than an intronic alternative Transcription Start Site (cf: reference <em>6</em>).</p>
+<p>Here is an overview of the result:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb26-2" data-line-number="2"><span class="kw">head</span>(IR_events)</a>
+<a class="sourceLine" id="cb26-3" data-line-number="3"><span class="co">#&gt;                              read_name qwidth  chr   start     end strand</span></a>
+<a class="sourceLine" id="cb26-4" data-line-number="4"><span class="co">#&gt; 1 1072a86c-67ee-4a66-9c45-c74a6fc28c4c    786 chr2  669183  677383      -</span></a>
+<a class="sourceLine" id="cb26-5" data-line-number="5"><span class="co">#&gt; 2 8fbf23fc-d804-406a-b0e5-34810a58f3b5    674 chr2  669238  677404      -</span></a>
+<a class="sourceLine" id="cb26-6" data-line-number="6"><span class="co">#&gt; 3 78b1928e-2a89-4fd0-91da-55ee6c0e7467   2402 chr2 3380934 3479565      +</span></a>
+<a class="sourceLine" id="cb26-7" data-line-number="7"><span class="co">#&gt; 4 74a323f3-e65c-460a-9d20-3381e0d06df9   1567 chr2 3465652 3479555      +</span></a>
+<a class="sourceLine" id="cb26-8" data-line-number="8"><span class="co">#&gt; 5 6af5fc43-e025-4f35-a8d4-87ffc23dbc1f   3497 chr2 3575304 3580893      +</span></a>
+<a class="sourceLine" id="cb26-9" data-line-number="9"><span class="co">#&gt; 6 6af5fc43-e025-4f35-a8d4-87ffc23dbc1f   3497 chr2 3575304 3580893      +</span></a>
+<a class="sourceLine" id="cb26-10" data-line-number="10"><span class="co">#&gt;           gene_id intron_chr intron_start intron_end intron_strand</span></a>
+<a class="sourceLine" id="cb26-11" data-line-number="11"><span class="co">#&gt; 1 ENSG00000151353       chr2       669676     669756             -</span></a>
+<a class="sourceLine" id="cb26-12" data-line-number="12"><span class="co">#&gt; 2 ENSG00000151353       chr2       676705     677288             -</span></a>
+<a class="sourceLine" id="cb26-13" data-line-number="13"><span class="co">#&gt; 3 ENSG00000171853       chr2      3379877    3387619             +</span></a>
+<a class="sourceLine" id="cb26-14" data-line-number="14"><span class="co">#&gt; 4 ENSG00000171853       chr2      3477796    3478845             +</span></a>
+<a class="sourceLine" id="cb26-15" data-line-number="15"><span class="co">#&gt; 5 ENSG00000171863       chr2      3577775    3580109             +</span></a>
+<a class="sourceLine" id="cb26-16" data-line-number="16"><span class="co">#&gt; 6 ENSG00000171863       chr2      3580476    3580804             +</span></a>
+<a class="sourceLine" id="cb26-17" data-line-number="17"><span class="co">#&gt;   intron_fracoverlap intron_startOverlap intron_endOverlap</span></a>
+<a class="sourceLine" id="cb26-18" data-line-number="18"><span class="co">#&gt; 1         0.90123457                TRUE              TRUE</span></a>
+<a class="sourceLine" id="cb26-19" data-line-number="19"><span class="co">#&gt; 2         0.09589041                TRUE             FALSE</span></a>
+<a class="sourceLine" id="cb26-20" data-line-number="20"><span class="co">#&gt; 3         0.01924319               FALSE             FALSE</span></a>
+<a class="sourceLine" id="cb26-21" data-line-number="21"><span class="co">#&gt; 4         1.00000000                TRUE              TRUE</span></a>
+<a class="sourceLine" id="cb26-22" data-line-number="22"><span class="co">#&gt; 5         1.00000000                TRUE              TRUE</span></a>
+<a class="sourceLine" id="cb26-23" data-line-number="23"><span class="co">#&gt; 6         1.00000000                TRUE              TRUE</span></a></code></pre></div>
+<p>Each line corresponds to a long read and one intron overlap. Long read overlapping several introns will then give rise to several lines in the data.frame.<br />
+IR event calling can then be easily performed. See the following for some examples.</p>
+<!-- Call -->
+</div>
+<div id="how-to-use-long-read-coverage-information" class="section level2">
+<h2>How to use long read coverage information</h2>
+<div id="extract-reliable-ir-events" class="section level3">
+<h3>Extract reliable IR events</h3>
+<p>You can extract complete intron retention events:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb27-2" data-line-number="2">full_IR_events &lt;-<span class="st"> </span>IR_events <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb27-3" data-line-number="3"><span class="st">                  </span><span class="kw">filter</span>(intron_fracoverlap <span class="op">==</span><span class="st"> </span><span class="dv">1</span> <span class="op">&amp;</span><span class="st"> </span>intron_startOverlap <span class="op">&amp;</span><span class="st"> </span>intron_endOverlap)</a>
+<a class="sourceLine" id="cb27-4" data-line-number="4"> </a></code></pre></div>
+</div>
+<div id="count-full-and-partial-ir-events" class="section level3">
+<h3>Count full and partial IR events</h3>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb28-2" data-line-number="2">retained_introns &lt;-<span class="st"> </span>IR_events <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb28-3" data-line-number="3"><span class="st">                    </span><span class="kw">filter</span>(intron_fracoverlap <span class="op">==</span><span class="st"> </span><span class="dv">1</span> <span class="op">&amp;</span><span class="st"> </span>intron_startOverlap <span class="op">&amp;</span><span class="st"> </span>intron_endOverlap) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb28-4" data-line-number="4"><span class="st">                    </span><span class="kw">group_by</span>(intron_chr, intron_start, intron_end, intron_strand, gene_id) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb28-5" data-line-number="5"><span class="st">                    </span><span class="kw">summarise</span>(<span class="dt">read_count =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb28-6" data-line-number="6"><span class="st">                    </span><span class="kw">data.frame</span>()</a>
+<a class="sourceLine" id="cb28-7" data-line-number="7"> </a></code></pre></div>
+</div>
+<div id="examine-intron-retaining-long-reads" class="section level3">
+<h3>Examine intron-retaining long reads</h3>
+<p>In order to extract long reads containing at least one intron at its full extent:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb29-2" data-line-number="2">IR_reads &lt;-<span class="st"> </span>full_IR_events <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb29-3" data-line-number="3"><span class="st">            </span><span class="kw">group_by</span>(read_name) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb29-4" data-line-number="4"><span class="st">            </span><span class="kw">summarise</span>(<span class="dt">nbfullRI =</span> <span class="kw">n</span>()) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb29-5" data-line-number="5"><span class="st">            </span><span class="kw">data.frame</span>()</a>
+<a class="sourceLine" id="cb29-6" data-line-number="6"> </a></code></pre></div>
+<p><br /></p>
+</div>
+</div>
+</div>
+<div id="ir-transcript-reconstruction-from-third-generation-rna-seq-data" class="section level1">
+<h1>IR transcript reconstruction: from Third Generation RNA-seq data</h1>
+<div id="typical-transcriptome-assembly-from-long-reads" class="section level2">
+<h2>Typical transcriptome assembly from long reads</h2>
+<p>Here is the general <em>StringTie2</em> command line to assemble transcripts from a long read RNA-seq data set(cf: <a href="https://github.com/gpertea/stringtie" class="uri">https://github.com/gpertea/stringtie</a>):</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb30-2" data-line-number="2">stringtie <span class="op">-</span>L <span class="op">-</span>G Homo_sapiens.GRCh38.<span class="fl">97.</span>gtf <span class="op">-</span>o assembly.gtf long_reads.bam</a>
+<a class="sourceLine" id="cb30-3" data-line-number="3"> </a></code></pre></div>
+<p>Several filtering steps can be considered to improve the assembly of (Intron-Retaining) transcripts:</p>
+<ol style="list-style-type: decimal">
+<li>The extraction of full-length long reads to mitigate the number of false positive shorter transcripts</li>
+<li>The extraction of long read overlapping an intron.</li>
+</ol>
+</div>
+<div id="extraction-of-full-length-reads" class="section level2">
+<h2>Extraction of full-length reads</h2>
+<p>First, we specify the (custom and reference) data we will need to identify alignments that (may) correspond to full-length reads:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb31-2" data-line-number="2"><span class="co"># Long read splice-aware alignments on a reference genome (eg: output by Minimap2):</span></a>
+<a class="sourceLine" id="cb31-3" data-line-number="3">alignments &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.dont.bam&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb31-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb31-5" data-line-number="5"><span class="co"># Reference transcriptome in a gtf file:</span></a>
+<a class="sourceLine" id="cb31-6" data-line-number="6">gtf &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;Homo_sapiens.GRCh38.97.chr2.gtf&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb31-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb31-8" data-line-number="8"><span class="co"># TSS called from CAGE data carried on a comparable cell line (here MCF7), provided by ENCODE:</span></a>
+<a class="sourceLine" id="cb31-9" data-line-number="9">cageFile &lt;-<span class="st">  </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;GSM849364_hg38_wgEncodeRikenCageMcf7CellPapTssGencV7.chr2.gtf&quot;</span>, </a>
+<a class="sourceLine" id="cb31-10" data-line-number="10">                         <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb31-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb31-12" data-line-number="12"><span class="co"># Name for the output bam file, that will contain only full-length reads alignments:</span></a>
+<a class="sourceLine" id="cb31-13" data-line-number="13">saveFile &lt;-<span class="st"> &quot;fl_long_reads.bam&quot;</span>  <span class="co"># Or replace with a convenient path</span></a></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb32-2" data-line-number="2"><span class="kw">extractFullLengthReads</span>(alignments, gtf, cageFile, saveFile, <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+</div>
+<div id="extraction-of-ir-transcripts" class="section level2">
+<h2>Extraction of IR-transcripts</h2>
+<p>So as to avoid ignoring rare IR-transcripts, you may first extract potential intron-retaining transcripts (by analysing genome alignments) and then perform reconstruction from those reads only with specific parameters (eg: no minimum isoform fraction).</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb33-2" data-line-number="2">gtf &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;Homo_sapiens.GRCh38.97.chr2.gtf&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb33-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb33-4" data-line-number="4">bamFile &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;MCF10A_chr2.dont.bam&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb33-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb33-6" data-line-number="6">saveFile &lt;-<span class="st"> &quot;ir_long_reads.bam&quot;</span></a>
+<a class="sourceLine" id="cb33-7" data-line-number="7"><span class="co"># Or replace with a convenient path</span></a></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb34-2" data-line-number="2"><span class="kw">extractIRreads</span>(alignments, <span class="dt">gtf =</span> gtf, <span class="dt">saveFile =</span> saveFile, <span class="dt">intronMinoverlap =</span> <span class="dv">5</span>, <span class="dt">keepSecondaryAlignments =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb34-3" data-line-number="3">  </a></code></pre></div>
+<p>This function will first identify intron intervals from the input reference transcriptome (gtf) by calling the function [‘IRFindeR2::createIntronGR()’] and will then select all long reads whose spliced alignment overlaps an intron.<br />
+Here, as a bam file name is given in <em>saveFile</em>, these alignments will be saved in a (new) bam file.</p>
+<p><br /></p>
+<p>You may also perform you own identification or subsetting of intron intervals and specify them in a GRanges object. The following lines of code are equivalent to the one above:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb35-2" data-line-number="2"><span class="co"># Define intronic intervals from a reference transcriptome</span></a>
+<a class="sourceLine" id="cb35-3" data-line-number="3"><span class="co"># Or feed intronGR with custom intron interval in a GRanges </span></a>
+<a class="sourceLine" id="cb35-4" data-line-number="4">intronGR &lt;-<span class="st"> </span><span class="kw">createIntronGR</span>( gtf )</a>
+<a class="sourceLine" id="cb35-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb35-6" data-line-number="6"><span class="kw">extractIRreads</span>(alignments, <span class="dt">intronGR =</span> intronGR, saveFile, <span class="dt">intronMinoverlap =</span> <span class="dv">5</span>, <span class="dt">keepSecondaryAlignments =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb35-7" data-line-number="7">  </a></code></pre></div>
+<p>You can then assemble only intron-overlapping long reads with <em>StringTie2</em> (for example) using:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb36-2" data-line-number="2">stringtie <span class="op">-</span>L <span class="op">-</span>G Homo_sapiens.GRCh38.<span class="fl">97.</span>gtf <span class="op">-</span>f <span class="dv">0</span> <span class="op">-</span>o assembly.gtf ir_long_reads.bam</a>
+<a class="sourceLine" id="cb36-3" data-line-number="3"> </a></code></pre></div>
+<p><br /></p>
+</div>
+</div>
+<div id="ir-events-interpretation-prediction-of-ir-nmd-coupling" class="section level1">
+<h1>IR events interpretation: prediction of IR-NMD coupling</h1>
+<p>We present several <em>in-silico</em> approaches to identify genes or transcripts that may be regulated through IR-NMD degradation.<br />
+They can be split into two families, depending on whether you know the full structure and sequence of expressed IR-isoforms (eg: assembled from full-length long reads), or only the genomic interval of retained introns (eg: inferred from short reads or truncated long reads).</p>
+<p><br /></p>
+<ol style="list-style-type: decimal">
+<li><p><strong>From intron genomic intervals</strong>: <a href="#detect-stop-codons-in-retained-introns">Detect stop codons in retained introns</a>, <a href="#assume-hypothetical-ir-transcripts-using-a-transcriptome-annotation">Assume hypothetical IR-transcripts using a transcriptome annotation</a></p></li>
+<li><p><strong>From full-length IR-isoforms</strong>:<br />
+<a href="#prediction-of-premature-termination-codons-in-assembled-transcripts">Prediction of Premature Termination Codons in assembled transcripts</a></p></li>
+</ol>
+<p><br /></p>
+<div id="detect-stop-codons-in-retained-introns" class="section level2">
+<h2>Detect stop codons in retained introns</h2>
+<p>We will need IR events (eg: selected as above) and reference genome sequences to extract intron sequences:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb37-2" data-line-number="2">BSgenome &lt;-<span class="st"> </span>BSgenome.Hsapiens.UCSC.hg38<span class="op">::</span>BSgenome.Hsapiens.UCSC.hg38</a>
+<a class="sourceLine" id="cb37-3" data-line-number="3"> </a></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb38-2" data-line-number="2">ir_events &lt;-<span class="st"> </span><span class="kw">countStopCodons</span>(ir_events, BSgenome, <span class="dt">stopCodons =</span> <span class="kw">c</span>(<span class="st">&quot;TAA&quot;</span>, <span class="st">&quot;TAG&quot;</span>, <span class="st">&quot;TGA&quot;</span>))</a>
+<a class="sourceLine" id="cb38-3" data-line-number="3"> </a></code></pre></div>
+<p>This will add three columns <strong>frame1</strong>, <strong>frame2</strong>, <strong>frame3</strong> to the <em>data.frame</em> of selected IR events, giving the number of stop codons found in the intron sequence according to the three possible “reading frames”:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb39-2" data-line-number="2">ir_events <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw">select</span>(seqnames, start, end, strand , frame1, frame2, frame3) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">head</span>(<span class="dv">15</span>)</a>
+<a class="sourceLine" id="cb39-3" data-line-number="3"><span class="co">#&gt;    seqnames    start      end strand frame1 frame2 frame3</span></a>
+<a class="sourceLine" id="cb39-4" data-line-number="4"><span class="co">#&gt; 1         2 11783922 11784885      +     38     15     14</span></a>
+<a class="sourceLine" id="cb39-5" data-line-number="5"><span class="co">#&gt; 2         2 19898035 19901029      -    183     87     69</span></a>
+<a class="sourceLine" id="cb39-6" data-line-number="6"><span class="co">#&gt; 3         2 23783028 23786026      -    195     91     64</span></a>
+<a class="sourceLine" id="cb39-7" data-line-number="7"><span class="co">#&gt; 4         2 24768135 24768220      +      4      2      3</span></a>
+<a class="sourceLine" id="cb39-8" data-line-number="8"><span class="co">#&gt; 5         2 24820451 24820723      -     10      6      3</span></a>
+<a class="sourceLine" id="cb39-9" data-line-number="9"><span class="co">#&gt; 6         2 26793893 26800928      +    316    136    100</span></a>
+<a class="sourceLine" id="cb39-10" data-line-number="10"><span class="co">#&gt; 7         2 27133337 27133531      -      8      6      1</span></a>
+<a class="sourceLine" id="cb39-11" data-line-number="11"><span class="co">#&gt; 8         2 27133721 27134286      -     21     12      8</span></a>
+<a class="sourceLine" id="cb39-12" data-line-number="12"><span class="co">#&gt; 9         2 27316186 27317077      -     24     13      6</span></a>
+<a class="sourceLine" id="cb39-13" data-line-number="13"><span class="co">#&gt; 10        2 27378371 27378466      -      4      2      1</span></a>
+<a class="sourceLine" id="cb39-14" data-line-number="14"><span class="co">#&gt; 11        2 27454162 27454353      -      6      2      1</span></a>
+<a class="sourceLine" id="cb39-15" data-line-number="15"><span class="co">#&gt; 12        2 43225752 43226264      -      4      2      1</span></a>
+<a class="sourceLine" id="cb39-16" data-line-number="16"><span class="co">#&gt; 13        2 43291768 43292103      -     18      7      3</span></a>
+<a class="sourceLine" id="cb39-17" data-line-number="17"><span class="co">#&gt; 14        2 61185618 61186445      +     48     27     17</span></a>
+<a class="sourceLine" id="cb39-18" data-line-number="18"><span class="co">#&gt; 15        2 72887736 72888313      +     19      9      7</span></a></code></pre></div>
+<p>The conclusions that can be drawn from this simple screen are limited.<br />
+Nonetheless, it may allow a quick selection of interesting targets:</p>
+<ol style="list-style-type: decimal">
+<li><strong>NMD-targets</strong>. Introns whose retention would insert stop codons in all three reading frame (if part of the CDS and if the transcript were exported to the cytoplasm) are sign of IR-NMD degradation. Here, they represent most of the IR events:</li>
+</ol>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb40-2" data-line-number="2">ir_events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(frame1<span class="op">*</span>frame2<span class="op">*</span>frame3 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">nrow</span>()</a>
+<a class="sourceLine" id="cb40-3" data-line-number="3"><span class="co">#&gt; [1] 91</span></a>
+<a class="sourceLine" id="cb40-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb40-5" data-line-number="5">ir_events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(frame1<span class="op">*</span>frame2<span class="op">*</span>frame3 <span class="op">&gt;</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb40-6" data-line-number="6"><span class="st">              </span>dplyr<span class="op">::</span><span class="kw">select</span>(seqnames, start, end, start, gene_name, frame1, frame2, frame3) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb40-7" data-line-number="7"><span class="st">              </span><span class="kw">head</span>(<span class="dv">15</span>)</a>
+<a class="sourceLine" id="cb40-8" data-line-number="8"><span class="co">#&gt;    seqnames    start      end gene_name frame1 frame2 frame3</span></a>
+<a class="sourceLine" id="cb40-9" data-line-number="9"><span class="co">#&gt; 1         2 11783922 11784885     LPIN1     38     15     14</span></a>
+<a class="sourceLine" id="cb40-10" data-line-number="10"><span class="co">#&gt; 2         2 19898035 19901029     TTC32    183     87     69</span></a>
+<a class="sourceLine" id="cb40-11" data-line-number="11"><span class="co">#&gt; 3         2 23783028 23786026    ATAD2B    195     91     64</span></a>
+<a class="sourceLine" id="cb40-12" data-line-number="12"><span class="co">#&gt; 4         2 24768135 24768220     NCOA1      4      2      3</span></a>
+<a class="sourceLine" id="cb40-13" data-line-number="13"><span class="co">#&gt; 5         2 24820451 24820723     ADCY3     10      6      3</span></a>
+<a class="sourceLine" id="cb40-14" data-line-number="14"><span class="co">#&gt; 6         2 26793893 26800928     CENPA    316    136    100</span></a>
+<a class="sourceLine" id="cb40-15" data-line-number="15"><span class="co">#&gt; 7         2 27133337 27133531      PREB      8      6      1</span></a>
+<a class="sourceLine" id="cb40-16" data-line-number="16"><span class="co">#&gt; 8         2 27133721 27134286      PREB     21     12      8</span></a>
+<a class="sourceLine" id="cb40-17" data-line-number="17"><span class="co">#&gt; 9         2 27316186 27317077     MPV17     24     13      6</span></a>
+<a class="sourceLine" id="cb40-18" data-line-number="18"><span class="co">#&gt; 10        2 27378371 27378466    ZNF513      4      2      1</span></a>
+<a class="sourceLine" id="cb40-19" data-line-number="19"><span class="co">#&gt; 11        2 27454162 27454353    IFT172      6      2      1</span></a>
+<a class="sourceLine" id="cb40-20" data-line-number="20"><span class="co">#&gt; 12        2 43225752 43226264   ZFP36L2      4      2      1</span></a>
+<a class="sourceLine" id="cb40-21" data-line-number="21"><span class="co">#&gt; 13        2 43291768 43292103     THADA     18      7      3</span></a>
+<a class="sourceLine" id="cb40-22" data-line-number="22"><span class="co">#&gt; 14        2 61185618 61186445    AHSA2P     48     27     17</span></a>
+<a class="sourceLine" id="cb40-23" data-line-number="23"><span class="co">#&gt; 15        2 72887736 72888313       SPR     19      9      7</span></a></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li><strong>Translated IR</strong>. On the opposite, introns whose retention would include no PTC into the transcript (whatever the rest of its exonic structure) may be indicate that IR-transcripts are actively translated (if exported to the cytoplasm):</li>
+</ol>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb41-2" data-line-number="2">ir_events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(frame1<span class="op">+</span>frame2<span class="op">+</span>frame3 <span class="op">==</span><span class="st"> </span><span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb41-3" data-line-number="3"> </a></code></pre></div>
+<p>There is no such case in out toy data set.</p>
+<ol start="3" style="list-style-type: decimal">
+<li><strong>Ambiguous cases</strong>. Other cases are ambiguous and could only be identified with the knowledge of the full transcript structure:</li>
+</ol>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb42-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb42-2" data-line-number="2">ir_events <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(frame1<span class="op">+</span>frame2<span class="op">+</span>frame3 <span class="op">!=</span><span class="st"> </span><span class="dv">0</span> <span class="op">&amp;</span><span class="st"> </span>frame1<span class="op">*</span>frame2<span class="op">*</span>frame3 <span class="op">==</span><span class="st"> </span><span class="dv">0</span>) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb42-3" data-line-number="3"><span class="st">              </span>dplyr<span class="op">::</span><span class="kw">select</span>(seqnames, start, end, start, gene_id, frame1, frame2, frame3)</a>
+<a class="sourceLine" id="cb42-4" data-line-number="4"><span class="co">#&gt;   seqnames     start       end         gene_id frame1 frame2 frame3</span></a>
+<a class="sourceLine" id="cb42-5" data-line-number="5"><span class="co">#&gt; 1        2 130370623 130370704 ENSG00000072135      1      0      0</span></a>
+<a class="sourceLine" id="cb42-6" data-line-number="6"><span class="co">#&gt; 2        2 240596521 240596680 ENSG00000142330      2      0      1</span></a></code></pre></div>
+</div>
+<div id="assume-hypothetical-ir-transcripts-using-a-transcriptome-annotation" class="section level2">
+<h2>Assume hypothetical IR-transcripts using a transcriptome annotation</h2>
+<p>Once isolated IR events have been selected without knowing the complete transcript structure (eg: from short read data <a href="#ir-events-detection-from-second-generation-rna-seq-data">IR events detection: from Second Generation RNA-seq data</a>, or truncated long read <a href="#ir-events-detection-from-third-generation-rna-seq-data">IR events detection: from Third Generation RNA-seq data</a>), one can create a “hypothetical” annotation for IR-transcripts by taking advantage of annotated transcripts that could contain them.</p>
+<p>Thus, first, we will need to specify suitable reference transcripts (here downloaded from <em>Ensembl</em>):</p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb43-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb43-2" data-line-number="2">gtf &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;Homo_sapiens.GRCh38.97.chr2.gtf&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>)</a>
+<a class="sourceLine" id="cb43-3" data-line-number="3"> </a></code></pre></div>
+<p>Then, we identify reference transcripts that are compatible with the detected IR events and create corresponding IR-transcripts assembly:</p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb44-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb44-2" data-line-number="2"><span class="co"># Where to save IR-transcripts assembly:</span></a>
+<a class="sourceLine" id="cb44-3" data-line-number="3">outfile &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>,  <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>), <span class="st">&quot;MCF10A.hypothetical_ir_transcripts.gtf&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;/&quot;</span>)</a>
+<a class="sourceLine" id="cb44-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb44-5" data-line-number="5"><span class="kw">findCompatibleTranscripts</span>(ir_events, gtf, <span class="dt">transcript_biotypes =</span> <span class="st">&quot;protein_coding&quot;</span>, <span class="dt">outfile =</span> outfile)</a>
+<a class="sourceLine" id="cb44-6" data-line-number="6"> </a></code></pre></div>
+</div>
+<div id="prediction-of-premature-termination-codons-in-assembled-transcripts" class="section level2">
+<h2>Prediction of Premature Termination Codons in assembled transcripts</h2>
+<p>There are several approaches to infer whether a given transcript harbours a Premature Termination Codon (PTC).<br />
+They are more or less accurate, and depend on the amount of data available to you.</p>
+<ol style="list-style-type: decimal">
+<li>Translation Initiation Sites are not easy to determine</li>
+<li>A single transcript may have several open reading frames</li>
+</ol>
+<p><br /></p>
+<p>We suggest a simple procedure that makes use of functions implemented in the Bioconductor package <em>IsoformSwitchAnalyzer</em>.</p>
+<p><br /></p>
+<p><em>IsoformSwitchAnalyzeR</em> can be installed via Bioconductor by:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb45-2" data-line-number="2"><span class="kw">install.packages</span>(<span class="st">&quot;BiocManager&quot;</span>)</a>
+<a class="sourceLine" id="cb45-3" data-line-number="3">BiocManager<span class="op">::</span><span class="kw">install</span>()</a>
+<a class="sourceLine" id="cb45-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb45-5" data-line-number="5">BiocManager<span class="op">::</span><span class="kw">install</span>(<span class="st">&quot;IsoformSwitchAnalyzeR&quot;</span>)</a>
+<a class="sourceLine" id="cb45-6" data-line-number="6"> </a></code></pre></div>
+<div id="orfs-and-ptc-prediction-from-complete-transcript-sequences" class="section level3">
+<h3>ORFs and PTC prediction from complete transcript sequences</h3>
+<p>Once installed, load <em>IsoformSwitchAnalyzeR</em> into your current R session:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb46-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb46-2" data-line-number="2"><span class="kw">suppressPackageStartupMessages</span>( <span class="kw">require</span>(IsoformSwitchAnalyzeR) )</a>
+<a class="sourceLine" id="cb46-3" data-line-number="3"> </a></code></pre></div>
+<p>In this example, we will import our own assembly of full-length MCF10A, provided as external data.<br />
+You may replace <em>assembly.gtf</em> with a path to your own assembly:</p>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb47-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb47-2" data-line-number="2">assembly.gtf &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>,  <span class="dt">package =</span> <span class="st">&quot;IRFindeR2&quot;</span>), <span class="st">&quot;MCF10A_chr2.dont_assembly.gtf&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;/&quot;</span>)</a>
+<a class="sourceLine" id="cb47-3" data-line-number="3">  </a></code></pre></div>
+<p>Now, import the transcriptome assembly as <em>switchAnalyzeRlist</em> object:</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb48-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb48-2" data-line-number="2">mySwitchList &lt;-<span class="st"> </span>IsoformSwitchAnalyzeR<span class="op">::</span><span class="kw">importGTF</span>(<span class="dt">pathToGTF =</span> assembly.gtf)</a>
+<a class="sourceLine" id="cb48-3" data-line-number="3"><span class="co">#&gt; importing GTF (this may take a while)</span></a>
+<a class="sourceLine" id="cb48-4" data-line-number="4"><span class="co">#&gt; converting GTF to switchAnalyzeRlist</span></a>
+<a class="sourceLine" id="cb48-5" data-line-number="5"><span class="co">#&gt; Warning in IsoformSwitchAnalyzeR::importGTF(pathToGTF = assembly.gtf): No CDS</span></a>
+<a class="sourceLine" id="cb48-6" data-line-number="6"><span class="co">#&gt; was found in the GTF file. Please make sure the GTF file have the CDS &quot;feature&quot;</span></a>
+<a class="sourceLine" id="cb48-7" data-line-number="7"><span class="co">#&gt; annotation. Adding NAs instead</span></a></code></pre></div>
+<p>Additionaly, we will need to specify a correct reference genome from which to retrieve transcripts sequences. Many reference genomes are made available by Bioconductor.</p>
+<p>In our example, we will use the <em>BSgenome</em> object containing the UCSC reference genome <em>Homo_sapiens</em> hg38:</p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb49-2" data-line-number="2">BSgenome &lt;-<span class="st"> </span>BSgenome.Hsapiens.UCSC.hg38<span class="op">::</span>BSgenome.Hsapiens.UCSC.hg38</a></code></pre></div>
+<p>There exist several approaches for predicting Open Reading Frames. It is far from being straightforward.<br />
+You will find more details and discussion in the <em>IsoformSwitchAnalyzer</em> package:</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb50-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb50-2" data-line-number="2"><span class="kw">vignette</span>( <span class="st">&quot;IsoformSwitchAnalyzeR&quot;</span> )</a>
+<a class="sourceLine" id="cb50-3" data-line-number="3"><span class="co">#&gt; starting httpd help server ... done</span></a></code></pre></div>
+<p>As for our own MCF10A assembly we do not have any external information about the CDS of transcripts, we will to infer them from the sequences only (which is probably not the best method).</p>
+<div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb51-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb51-2" data-line-number="2">orfMethod &lt;-<span class="st"> &quot;mostUpstream&quot;</span></a>
+<a class="sourceLine" id="cb51-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb51-4" data-line-number="4">mySwitchList &lt;-<span class="st"> </span><span class="kw">analyzeORF</span>(<span class="dt">switchAnalyzeRlist =</span> mySwitchList, </a>
+<a class="sourceLine" id="cb51-5" data-line-number="5">                           <span class="dt">genomeObject =</span> BSgenome,</a>
+<a class="sourceLine" id="cb51-6" data-line-number="6">                           <span class="dt">orfMethod =</span> orfMethod, </a>
+<a class="sourceLine" id="cb51-7" data-line-number="7">                           <span class="dt">quiet =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb51-8" data-line-number="8"> </a></code></pre></div>
+<p>Typical output of the analysis of Open Reading Frames by <em>IsoformSwitchAnalyzeR</em> can be found in the <em>data.frame</em>:</p>
+<div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb52-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb52-2" data-line-number="2">mySwitchList<span class="op">$</span>orfAnalysis</a>
+<a class="sourceLine" id="cb52-3" data-line-number="3"> </a></code></pre></div>
+<p>In particular:</p>
+<div class="sourceCode" id="cb53"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb53-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb53-2" data-line-number="2">mySwitchList<span class="op">$</span>orfAnalysis <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw">select</span>(isoform_id, </a>
+<a class="sourceLine" id="cb53-3" data-line-number="3">                                           orfStartGenomic, orfEndGenomic, </a>
+<a class="sourceLine" id="cb53-4" data-line-number="4">                                           stopDistanceToLastJunction, PTC) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb53-5" data-line-number="5"><span class="st">                             </span><span class="kw">head</span>(<span class="dv">15</span>)</a>
+<a class="sourceLine" id="cb53-6" data-line-number="6"><span class="co">#&gt;        isoform_id orfStartGenomic orfEndGenomic stopDistanceToLastJunction</span></a>
+<a class="sourceLine" id="cb53-7" data-line-number="7"><span class="co">#&gt; 1  TCONS_00035327          264965        277301                        -75</span></a>
+<a class="sourceLine" id="cb53-8" data-line-number="8"><span class="co">#&gt; 2  TCONS_00035328          264965        276988                         97</span></a>
+<a class="sourceLine" id="cb53-9" data-line-number="9"><span class="co">#&gt; 3  TCONS_00035329          264965        277301                        -75</span></a>
+<a class="sourceLine" id="cb53-10" data-line-number="10"><span class="co">#&gt; 4  TCONS_00035330          264965        272255                        218</span></a>
+<a class="sourceLine" id="cb53-11" data-line-number="11"><span class="co">#&gt; 5  TCONS_00035331         3387624       3388742                      -1123</span></a>
+<a class="sourceLine" id="cb53-12" data-line-number="12"><span class="co">#&gt; 6  TCONS_00035332         3387624       3479458                       -240</span></a>
+<a class="sourceLine" id="cb53-13" data-line-number="13"><span class="co">#&gt; 7  TCONS_00035333         3387624       3479458                       -240</span></a>
+<a class="sourceLine" id="cb53-14" data-line-number="14"><span class="co">#&gt; 8  TCONS_00035334         3387624       3479458                       -240</span></a>
+<a class="sourceLine" id="cb53-15" data-line-number="15"><span class="co">#&gt; 9  TCONS_00035335         3575610       3580879                        -75</span></a>
+<a class="sourceLine" id="cb53-16" data-line-number="16"><span class="co">#&gt; 10 TCONS_00035336         3575610       3575849                        -33</span></a>
+<a class="sourceLine" id="cb53-17" data-line-number="17"><span class="co">#&gt; 11 TCONS_00035337         3575610       3580314                       -205</span></a>
+<a class="sourceLine" id="cb53-18" data-line-number="18"><span class="co">#&gt; 12 TCONS_00035338         3575486       3575884                        364</span></a>
+<a class="sourceLine" id="cb53-19" data-line-number="19"><span class="co">#&gt; 13 TCONS_00035339         3575610       3580879                        -75</span></a>
+<a class="sourceLine" id="cb53-20" data-line-number="20"><span class="co">#&gt; 14 TCONS_00035340         3575610       3580879                        -75</span></a>
+<a class="sourceLine" id="cb53-21" data-line-number="21"><span class="co">#&gt; 15 TCONS_00035341         3575486       3575884                          4</span></a>
+<a class="sourceLine" id="cb53-22" data-line-number="22"><span class="co">#&gt;      PTC</span></a>
+<a class="sourceLine" id="cb53-23" data-line-number="23"><span class="co">#&gt; 1  FALSE</span></a>
+<a class="sourceLine" id="cb53-24" data-line-number="24"><span class="co">#&gt; 2   TRUE</span></a>
+<a class="sourceLine" id="cb53-25" data-line-number="25"><span class="co">#&gt; 3  FALSE</span></a>
+<a class="sourceLine" id="cb53-26" data-line-number="26"><span class="co">#&gt; 4   TRUE</span></a>
+<a class="sourceLine" id="cb53-27" data-line-number="27"><span class="co">#&gt; 5  FALSE</span></a>
+<a class="sourceLine" id="cb53-28" data-line-number="28"><span class="co">#&gt; 6  FALSE</span></a>
+<a class="sourceLine" id="cb53-29" data-line-number="29"><span class="co">#&gt; 7  FALSE</span></a>
+<a class="sourceLine" id="cb53-30" data-line-number="30"><span class="co">#&gt; 8  FALSE</span></a>
+<a class="sourceLine" id="cb53-31" data-line-number="31"><span class="co">#&gt; 9  FALSE</span></a>
+<a class="sourceLine" id="cb53-32" data-line-number="32"><span class="co">#&gt; 10 FALSE</span></a>
+<a class="sourceLine" id="cb53-33" data-line-number="33"><span class="co">#&gt; 11 FALSE</span></a>
+<a class="sourceLine" id="cb53-34" data-line-number="34"><span class="co">#&gt; 12  TRUE</span></a>
+<a class="sourceLine" id="cb53-35" data-line-number="35"><span class="co">#&gt; 13 FALSE</span></a>
+<a class="sourceLine" id="cb53-36" data-line-number="36"><span class="co">#&gt; 14 FALSE</span></a>
+<a class="sourceLine" id="cb53-37" data-line-number="37"><span class="co">#&gt; 15 FALSE</span></a></code></pre></div>
+<p>We can now get a contigency table of assembled transcripts with or without a PTC:</p>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb54-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb54-2" data-line-number="2"><span class="kw">table</span>( mySwitchList<span class="op">$</span>orfAnalysis<span class="op">$</span>PTC )</a>
+<a class="sourceLine" id="cb54-3" data-line-number="3"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb54-4" data-line-number="4"><span class="co">#&gt; FALSE  TRUE </span></a>
+<a class="sourceLine" id="cb54-5" data-line-number="5"><span class="co">#&gt;  3155  1487</span></a></code></pre></div>
+<p><br /></p>
+<!-- References -->
+</div>
+</div>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<ol style="list-style-type: decimal">
+<li><em>Middleton et al. <strong>IRFinder:assessing the impact of intron retention on mammalian gene expression</strong> Genome Biology. (2017)</em></li>
+<li><em>Broseus and Ritchie <strong>Challenges in detecting and quantifying intron retention from NGS data.</strong> CSBJ. (2020)</em></li>
+<li><em>Broseus et al. <strong>TALC: Transcription Aware Long Read Correction.</strong> BioRxiv. (2020)</em></li>
+<li><em>Li. <strong>Minimap2: pairwise alignment for nucleotide sequences.</strong> Bioinformatics (2018)</em></li>
+<li><em>Kovaka et al. <strong>Transcriptome assembly from long-read RNA-seq alignments with StringTie2</strong> Genome Biology (2019)</em></li>
+<li><em>Vacik et al. <strong>Alternative intronic promoters in development and disease.</strong> Protoplasma (2017)</em></li>
+<li><em>Vitting-Seerup et al. <strong>IsoformSwitchAnalyzeR: Analysis of changes in genome-wide patterns of alternative splicing and its functional consequences.</strong> Bioinformatics (2019)</em></li>
+<li><em>Anders et al. <strong>Detecting Differential Usage of Exons from RNA-seq Data.</strong> Genome Research (2008)</em></li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
