@@ -8,7 +8,7 @@ A pdf version of the tutorial is available here: [Tutorial](https://github.com/l
 
 ## Package installation 
 
-Please note that FakIRrequires rlang version >= 0.4.5.
+Please note that FakIR requires rlang version >= 0.4.5.
 
 Also, FakIR makes use of functionalities from several packages from [Bioconductor](https://bioconductor.org) you might need to install first.
 This can be done by copy-pasting the following code in a R session:
@@ -36,7 +36,7 @@ Then, install FakIR using:
 
 ```
 
-devtools::install_github("lbroseus/FakIR", build_vignettes = TRUE)
+devtools::install_github("lbroseus/FakIR", build_vignettes = T)
    
 ```
 
