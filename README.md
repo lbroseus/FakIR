@@ -71,4 +71,5 @@ Especially, it illustrates how to perform the following tasks:
 ## References
 
 1. _Broseus and Ritchie **Challenges in detecting and quantifying intron retention from NGS data.** CSBJ. (2020)_
+2. _Grabski, DF, Broseus, L, Kumari, B, Rekosh, D, Hammarskjold, M‐L, Ritchie, W. **Intron retention and its impact on gene expression and protein diversity: A review and a practical guide.** WIREs RNA. 2021; 12:e1631. https://doi.org/10.1002/wrna.1631_
 
